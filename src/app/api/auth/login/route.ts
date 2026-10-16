@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { findUserByEmail, verifyPassword, createSession, ensureDefaultUser } from '@/lib/auth';
 import { verifyToken } from '@/lib/totp';
 import { logAudit } from '@/lib/audit';
+import { sessionCookieOptions } from '@/lib/sessionCookie';
 
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 8;
@@ -40,12 +41,6 @@ export async function POST(req: NextRequest) {
   const token = await createSession(user.id);
   logAudit(token, 'login', 'user', user.id);
   const response = NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
-  response.cookies.set('session', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 12,
-  });
+  response.cookies.set('session', token, sessionCookieOptions(req, 60 * 60 * 12));
   return response;
 }
