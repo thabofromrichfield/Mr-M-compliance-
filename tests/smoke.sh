@@ -7,10 +7,15 @@ PASSWORD="${DEFAULT_PASSWORD:-Compliance123!}"
 TMP="$(mktemp -d)"
 COOKIE_JAR="$TMP/cookies.txt"
 RESTORE_USERS=0
+RESTORE_SESSIONS=0
 restore_smoke_state() {
   if [[ "$RESTORE_USERS" == "1" && -f "$TMP/users.backup" ]]; then
     rm -f .data/users.json
     mv "$TMP/users.backup" .data/users.json
+  fi
+  if [[ "$RESTORE_SESSIONS" == "1" && -f "$TMP/sessions.backup" ]]; then
+    rm -f .data/sessions.json
+    mv "$TMP/sessions.backup" .data/sessions.json
   fi
   rm -rf "$TMP"
 }
@@ -49,13 +54,21 @@ python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["user"]["email"
 if [[ -f .data/users.json ]]; then
   mv .data/users.json "$TMP/users.backup"
   RESTORE_USERS=1
+  if [[ -f .data/sessions.json ]]; then
+    mv .data/sessions.json "$TMP/sessions.backup"
+    RESTORE_SESSIONS=1
+  fi
   status=$(curl -s "${AUTH[@]}" -o "$TMP/isolation.json" -w '%{http_code}' "$BASE_URL/api/documents")
-  [[ "$status" == "200" ]] || { echo "Expected signed session to survive an isolated serverless filesystem; got $status"; exit 1; }
+  [[ "$status" == "200" ]] || { echo "Expected signed session to survive isolated user/session files; got $status"; exit 1; }
   curl -fsS "${AUTH[@]}" "$BASE_URL/api/auth/me" > "$TMP/isolated-me.json"
   python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["user"]["email"]' "$TMP/isolated-me.json"
   rm -f .data/users.json
   mv "$TMP/users.backup" .data/users.json
   RESTORE_USERS=0
+  if [[ "$RESTORE_SESSIONS" == "1" ]]; then
+    mv "$TMP/sessions.backup" .data/sessions.json
+    RESTORE_SESSIONS=0
+  fi
 fi
 
 # The authenticated user should be able to reach every primary workspace screen.
