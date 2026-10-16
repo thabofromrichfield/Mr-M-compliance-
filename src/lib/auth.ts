@@ -22,7 +22,7 @@ export interface Session {
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 export async function hashPassword(pw: string) {
-  return bcrypt.hash(pw, 10);
+  return bcrypt.hash(pw, 12);
 }
 export async function verifyPassword(pw: string, hash: string) {
   return bcrypt.compare(pw, hash);
@@ -49,8 +49,6 @@ export async function createSession(userId: string) {
 }
 
 export function getSession(token: string): Session | undefined {
-  const s = localStore.get<Session>('sessions', token) as Session | undefined;
-  // sessions keyed by token? localStore.get uses id field. sessions have token not id. Adjust: search.
   const found = localStore.list<Session>('sessions').find((x) => x.token === token);
   if (!found) return undefined;
   if (new Date(found.expiresAt).getTime() < Date.now()) {
@@ -78,14 +76,22 @@ export function userCount() {
 
 
 export async function ensureDefaultUser() {
-  if (userCount() > 0) return;
-  const passwordHash = await hashPassword(DEFAULT_PASSWORD);
-  const user = {
+  if (!DEFAULT_EMAIL || !DEFAULT_PASSWORD) {
+    throw new Error('Set DEFAULT_EMAIL and DEFAULT_PASSWORD before enabling production sign-in.');
+  }
+  const users = localStore.list<User>('users');
+  const owner = users.find((user) => user.email.toLowerCase() === DEFAULT_EMAIL);
+  if (owner) {
+    // Enforce the single-owner model even if old demo data contains extra accounts.
+    if (users.length !== 1) localStore.replaceAll('users', [owner]);
+    return;
+  }
+  const user: User = {
     id: crypto.randomUUID(),
     email: DEFAULT_EMAIL,
-    passwordHash,
+    passwordHash: await hashPassword(DEFAULT_PASSWORD),
     totpEnabled: false,
     createdAt: new Date().toISOString(),
   };
-  localStore.insert('users', user);
+  localStore.replaceAll('users', [user]);
 }

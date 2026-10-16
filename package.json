@@ -1,19 +1,19 @@
 {
-  "name": "compliance-app",
+  "name": "clearledger-compliance",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:smoke": "bash tests/smoke.sh"
   },
   "dependencies": {
     "archiver": "^8.0.0",
     "bcryptjs": "^3.0.3",
     "cookie": "^2.0.1",
     "date-fns": "^4.4.0",
-    "firebase": "^13.0.0",
     "firebase-admin": "^14.5.0",
     "jsonwebtoken": "^9.0.3",
     "next": "16.4.2",
@@ -26,6 +26,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@tailwindcss/turbopack": "^4",
     "@types/archiver": "^8.0.0",
     "@types/bcryptjs": "^2.4.6",
@@ -37,8 +38,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "typescript-eslint": "^8.71.2"
   }
 }

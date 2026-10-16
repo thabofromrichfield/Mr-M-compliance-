@@ -2,14 +2,10 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Compliance App',
-  description: 'Single-user compliance document tracker',
+  title: 'ClearLedger | Compliance workspace',
+  description: 'A private workspace for compliance documents, renewals, and expiry alerts.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-900">{children}</body>
-    </html>
-  );
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="en"><body>{children}</body></html>;
 }

@@ -17,7 +17,9 @@ export function parseRenewToken(tok: string): string | null {
     const expected = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
     if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
     // optional expiry: token valid 30 days
-    if (Date.now() - Number(ts) > 1000 * 60 * 60 * 24 * 30) return null;
+    const issuedAt = Number(ts);
+    const age = Date.now() - issuedAt;
+    if (!Number.isFinite(issuedAt) || age < 0 || age > 1000 * 60 * 60 * 24 * 30) return null;
     return docId;
   } catch {
     return null;

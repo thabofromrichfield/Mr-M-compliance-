@@ -1,67 +1,21 @@
 'use client';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
+type User = { email: string; totpEnabled: boolean };
 export default function SettingsPage() {
-  const [qr, setQr] = useState('');
-  const [secret, setSecret] = useState('');
-  const [code, setCode] = useState('');
-  const [msg, setMsg] = useState('');
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    fetch('/api/auth/me').then((r) => r.json()).then((d) => setUser(d.user));
-  }, []);
-
-  async function setup2fa() {
-    const r = await fetch('/api/auth/totp/setup', { method: 'POST' });
-    const d = await r.json();
-    setQr(d.qr); setSecret(d.secret);
-  }
-  async function verify2fa() {
-    const r = await fetch('/api/auth/totp/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-    const d = await r.json();
-    if (r.ok) { setMsg('2FA enabled'); setQr(''); } else setMsg(d.error || 'Failed');
-  }
-
-  return (
-    <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold">Settings</h1>
-
-      <div className="bg-white rounded shadow p-4 space-y-3">
-        <h2 className="font-semibold">Two-factor authentication</h2>
-        <p className="text-sm text-slate-500">Status: {user?.totpEnabled ? 'Enabled' : 'Disabled'}</p>
-        {!qr && <button onClick={setup2fa} className="bg-slate-900 text-white px-4 py-2 rounded">Set up 2FA</button>}
-        {qr && (
-          <div className="space-y-3">
-            <img src={qr} alt="QR code" className="w-48 h-48" />
-            <p className="text-xs break-all">Secret: {secret}</p>
-            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Enter code" className="border p-2 rounded w-full" />
-            <button onClick={verify2fa} className="bg-blue-600 text-white px-4 py-2 rounded">Verify & enable</button>
-          </div>
-        )}
-        {msg && <div className="text-sm">{msg}</div>}
-      </div>
-
-      <div className="bg-white rounded shadow p-4 space-y-3">
-        <h2 className="font-semibold">Backup / Export</h2>
-        <p className="text-sm text-slate-500">Download a zip of all stored documents.</p>
-        <a href="/api/export" className="bg-slate-900 text-white px-4 py-2 rounded inline-block">Download backup</a>
-      </div>
-
-      <div className="bg-white rounded shadow p-4 space-y-3">
-        <h2 className="font-semibold">Email alerts</h2>
-        <p className="text-sm text-slate-500">Recipients are fixed via ALERT_RECIPIENTS env config. Trigger a check manually:</p>
-        <button onClick={async () => {
-          const r = await fetch(`/api/cron/alerts?secret=${encodeURIComponent(process.env.NEXT_PUBLIC_CRON_SECRET || '')}`);
-          // fallback: prompt
-          alert('Use /api/cron/alerts?secret=CRON_SECRET');
-        }} className="bg-slate-900 text-white px-4 py-2 rounded">Info</button>
-        <p className="text-xs text-slate-400">Run: GET /api/cron/alerts?secret=YOUR_CRON_SECRET</p>
-      </div>
-    </div>
-  );
+ const [qr, setQr] = useState(''); const [secret, setSecret] = useState(''); const [code, setCode] = useState(''); const [message, setMessage] = useState(''); const [user, setUser] = useState<User | null>(null); const [busy, setBusy] = useState(false);
+ useEffect(() => { fetch('/api/auth/me', { cache: 'no-store' }).then((r) => r.json()).then((d) => setUser(d.user)); }, []);
+ async function setup() { setBusy(true); setMessage(''); const r = await fetch('/api/auth/totp/setup', { method: 'POST' }); const d = await r.json(); setBusy(false); if (!r.ok) { setMessage(d.error || 'Unable to start setup.'); return; } setQr(d.qr); setSecret(d.secret); }
+ async function verify() { setBusy(true); const r = await fetch('/api/auth/totp/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) }); const d = await r.json(); setBusy(false); if (r.ok) { setMessage('Two-factor authentication is enabled.'); setQr(''); setUser((current) => current ? { ...current, totpEnabled: true } : current); } else setMessage(d.error || 'That code was not accepted.'); }
+ return <>
+  <div className="page-heading"><div><div className="eyebrow" style={{ marginBottom: 8 }}>WORKSPACE PREFERENCES</div><h1>Settings</h1><p>Manage sign-in protection, reminders, and data backups.</p></div></div>
+  {message && <div role="status" className={`notice ${message.toLowerCase().includes('unable') || message.toLowerCase().includes('not accepted') ? 'notice-error' : 'notice-success'}`} style={{ marginBottom: 16 }}>{message}</div>}
+  <div style={{ display: 'grid', gap: 16, maxWidth: 850 }}>
+   <section className="card card-pad"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14 }}><div><h2 className="card-title">Account</h2><p className="card-subtitle">Your single-owner workspace identity</p></div><span className="status-pill status-safe">Owner access</span></div><div className="overview-item" style={{ marginTop: 13 }}><span className="avatar" style={{ width: 38, height: 38 }}>{user?.email?.slice(0, 1).toUpperCase() || 'A'}</span><span className="overview-copy"><span className="overview-name">{user?.email || 'Loading account…'}</span><span className="overview-date">Self-registration is disabled</span></span></div></section>
+   <section className="card card-pad"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14 }}><div><h2 className="card-title">Two-factor authentication</h2><p className="card-subtitle">Add an authenticator code to your sign-in.</p></div><span className={`status-pill ${user?.totpEnabled ? 'status-safe' : 'status-soon'}`}>{user?.totpEnabled ? 'Enabled' : 'Not enabled'}</span></div>{user?.totpEnabled ? <p style={{ color: '#64776c', fontSize: 12, marginTop: 16 }}>Your account requires a time-based code in addition to your password.</p> : !qr ? <button className="button button-secondary" style={{ marginTop: 17 }} onClick={setup} disabled={busy}>{busy ? 'Preparing…' : 'Set up authenticator'}</button> : <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: '180px 1fr', gap: 20, alignItems: 'center' }}><Image src={qr} alt="Scan with your authenticator app" width={170} height={170} unoptimized style={{ borderRadius: 8, border: '1px solid var(--line)' }}/><div><p className="card-subtitle" style={{ marginBottom: 9 }}>Scan this QR code, then enter the six-digit code from your authenticator.</p><code style={{ display: 'block', overflowWrap: 'anywhere', color: '#315b45', padding: 10, background: '#f4f7f4', borderRadius: 7, fontSize: 11 }}>{secret}</code><label className="field-label" htmlFor="totp-code" style={{ marginTop: 13 }}>Verification code</label><div style={{ display: 'flex', gap: 8 }}><input className="field" id="totp-code" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456"/><button className="button button-primary" disabled={busy || !code} onClick={verify}>{busy ? 'Checking…' : 'Verify'}</button></div></div></div>}</section>
+   <section className="card card-pad"><h2 className="card-title">Email reminders</h2><p className="card-subtitle">Reminders are sent 30 days, 7 days, and 1 day before a document expires.</p><div className="alert-box" style={{ marginTop: 16, borderColor: '#dce9df', background: '#f4f8f4', color: '#597367' }}><strong>Fixed recipient list</strong><br/>Reminder recipients are configured by the workspace administrator. They cannot be changed from this page.</div></section>
+   <section className="card card-pad"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 15 }}><div><h2 className="card-title">Data backup</h2><p className="card-subtitle">Download a ZIP archive of your files and document manifest.</p></div><a className="button button-primary" href="/api/export">↓ Download ZIP</a></div></section>
+  </div>
+ </>;
 }

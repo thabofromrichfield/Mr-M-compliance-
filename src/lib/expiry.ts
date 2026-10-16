@@ -2,7 +2,7 @@ import { parse, isValid } from 'date-fns';
 
 const DATE_REGEXES = [
   /\b\d{4}-\d{2}-\d{2}\b/g,
-  /\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b/g,
+  /\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b/g,
   /\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4}\b/gi,
   /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{2,4}\b/gi,
 ];
@@ -30,15 +30,12 @@ export function extractDates(text: string): string[] {
 }
 
 function tryParse(s: string): Date | null {
-  for (const f of FORMATS) {
-    try {
-      const d = parse(s, f, new Date());
-      if (isValid(d)) {
-        // sanity: year between 2000 and 2100
-        const y = d.getFullYear();
-        if (y >= 2000 && y <= 2100) return d;
-      }
-    } catch {}
+  for (const format of FORMATS) {
+    const candidate = parse(s, format, new Date());
+    if (isValid(candidate)) {
+      const year = candidate.getFullYear();
+      if (year >= 2000 && year <= 2100) return candidate;
+    }
   }
   // fallback native
   const n = new Date(s);
@@ -53,14 +50,17 @@ export async function extractTextFromFile(buffer: Buffer, mimeType: string, file
   const lower = filename.toLowerCase();
   if (mimeType === 'application/pdf' || lower.endsWith('.pdf')) {
     try {
-      const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      type PdfPage = { getTextContent: () => Promise<{ items: { str: string }[] }> };
+      type PdfDocument = { numPages: number; getPage: (page: number) => Promise<PdfPage> };
+      type PdfModule = { getDocument: (options: { data: Uint8Array }) => { promise: Promise<PdfDocument> } };
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs') as unknown as PdfModule;
       const data = new Uint8Array(buffer);
       const doc = await pdfjs.getDocument({ data }).promise;
       let text = '';
       for (let i = 1; i <= doc.numPages; i++) {
         const page = await doc.getPage(i);
-        const tc = await page.getTextContent();
-        text += tc.items.map((it: any) => it.str).join(' ') + '\n';
+        const content = await page.getTextContent();
+        text += content.items.map((item) => item.str).join(' ') + '\n';
       }
       return text;
     } catch (e) {

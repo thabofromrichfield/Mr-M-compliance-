@@ -1,123 +1,44 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 
+type Doc = { id: string; name: string; category: string; tags?: string[]; expiryDate?: string | null; status: string; size?: number; candidates?: string[] };
+const categories = ['Licence', 'Insurance', 'Identity', 'Business certificate', 'Tax', 'Other'];
+function dateLabel(value?: string | null) { if (!value) return 'Not set'; return new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`)); }
+function urgency(doc: Doc) { if (doc.status === 'renewed') return { text: 'Renewed', cls: 'status-renewed' }; if (!doc.expiryDate) return { text: 'No date', cls: 'status-none' }; const days = Math.ceil((Date.parse(`${doc.expiryDate}T00:00:00Z`) - Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`)) / 86400000); if (days < 0) return { text: 'Expired', cls: 'status-expired' }; if (days <= 7) return { text: 'Urgent', cls: 'status-urgent' }; if (days <= 30) return { text: 'Due soon', cls: 'status-soon' }; return { text: 'On track', cls: 'status-safe' }; }
+
 export default function DocumentsPage() {
-  const [docs, setDocs] = useState<any[]>([]);
-  const [categories] = useState(['licences', 'insurance', 'ID', 'business certificates', 'other']);
-  const [file, setFile] = useState<File | null>(null);
-  const [category, setCategory] = useState('other');
-  const [tags, setTags] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [pending, setPending] = useState<any>(null); // uploaded doc awaiting confirmation
-  const [expiryInput, setExpiryInput] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  async function load() {
-    const r = await fetch('/api/documents');
-    const d = await r.json();
-    setDocs(d.documents || []);
-  }
-  useEffect(() => { load(); }, []);
-
-  async function upload(e: React.FormEvent) {
-    e.preventDefault();
-    if (!file) return;
-    setUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('category', category);
-    fd.append('tags', tags);
-    const r = await fetch('/api/documents', { method: 'POST', body: fd });
-    const d = await r.json();
-    setUploading(false);
-    if (!r.ok) { alert(d.error || 'Upload failed'); return; }
-    setPending(d.document);
-    setExpiryInput(d.document.expiryDate || '');
-    setFile(null);
-    if (inputRef.current) inputRef.current.value = '';
-    load();
-  }
-
-  async function confirmExpiry() {
-    if (!pending) return;
-    await fetch(`/api/documents/${pending.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ expiryDate: expiryInput || null }),
-    });
-    setPending(null);
-    load();
-  }
-
-  async function remove(id: string) {
-    if (!confirm('Delete this document?')) return;
-    await fetch(`/api/documents/${id}`, { method: 'DELETE' });
-    load();
-  }
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Documents</h1>
-
-      <form onSubmit={upload} className="bg-white rounded shadow p-4 space-y-3">
-        <h2 className="font-semibold">Upload document</h2>
-        <input ref={inputRef} type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="block" />
-        <div className="flex gap-3">
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="border p-2 rounded">
-            {categories.map((c) => <option key={c}>{c}</option>)}
-          </select>
-          <input className="border p-2 rounded flex-1" placeholder="Tags (comma separated)" value={tags} onChange={(e) => setTags(e.target.value)} />
-        </div>
-        <button disabled={uploading || !file} className="bg-slate-900 text-white px-4 py-2 rounded">
-          {uploading ? 'Uploading…' : 'Upload'}
-        </button>
-      </form>
-
-      {pending && (
-        <div className="bg-amber-50 border border-amber-200 rounded p-4 space-y-3">
-          <h2 className="font-semibold">Confirm expiry date for {pending.name}</h2>
-          {pending.candidates?.length ? (
-            <p className="text-sm">Detected dates: {pending.candidates.join(', ')}. Latest used as default.</p>
-          ) : (
-            <p className="text-sm">No date detected. Please enter expiry manually.</p>
-          )}
-          <input type="date" value={expiryInput} onChange={(e) => setExpiryInput(e.target.value)} className="border p-2 rounded" />
-          <div className="flex gap-2">
-            <button onClick={confirmExpiry} className="bg-blue-600 text-white px-4 py-2 rounded">Confirm</button>
-            <button onClick={() => setPending(null)} className="px-4 py-2 rounded border">Skip</button>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white rounded shadow">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-100">
-            <tr>
-              <th className="text-left p-3">Name</th>
-              <th className="text-left p-3">Category</th>
-              <th className="text-left p-3">Tags</th>
-              <th className="text-left p-3">Expiry</th>
-              <th className="text-left p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {docs.map((d) => (
-              <tr key={d.id} className="border-t">
-                <td className="p-3"><Link href={`/documents/${d.id}`} className="text-blue-600">{d.name}</Link></td>
-                <td className="p-3">{d.category}</td>
-                <td className="p-3">{(d.tags || []).join(', ')}</td>
-                <td className="p-3">{d.expiryDate || '—'}</td>
-                <td className="p-3 space-x-2">
-                  <a href={`/api/documents/${d.id}/file`} target="_blank" className="text-slate-600">View</a>
-                  <button onClick={() => remove(d.id)} className="text-red-600">Delete</button>
-                </td>
-              </tr>
-            ))}
-            {docs.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-slate-500">No documents.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+ const [docs, setDocs] = useState<Doc[]>([]); const [loading, setLoading] = useState(true); const [file, setFile] = useState<File | null>(null); const [category, setCategory] = useState('Other'); const [tags, setTags] = useState(''); const [uploading, setUploading] = useState(false); const [pending, setPending] = useState<Doc | null>(null); const [expiry, setExpiry] = useState(''); const [query, setQuery] = useState(''); const [filter, setFilter] = useState('All'); const [notice, setNotice] = useState(''); const inputRef = useRef<HTMLInputElement>(null);
+ const load = useCallback(async () => { const res = await fetch('/api/documents', { cache: 'no-store' }); const data = await res.json(); setDocs(data.documents || []); setLoading(false); }, []);
+ useEffect(() => {
+  // This effect starts an async server fetch; state is updated only after its response resolves.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  void load().catch(() => setLoading(false));
+ }, [load]);
+ const filtered = useMemo(() => docs.filter((d) => (filter === 'All' || urgency(d).text === filter) && `${d.name} ${d.category} ${(d.tags || []).join(' ')}`.toLowerCase().includes(query.toLowerCase())), [docs, filter, query]);
+ async function upload(e: React.FormEvent) { e.preventDefault(); if (!file) return; setUploading(true); setNotice(''); const fd = new FormData(); fd.append('file', file); fd.append('category', category); fd.append('tags', tags); try { const res = await fetch('/api/documents', { method: 'POST', body: fd }); const data = await res.json(); if (!res.ok) { setNotice(data.error || 'Upload failed. Please try again.'); setUploading(false); return; } setPending(data.document); setExpiry(data.document.expiryDate || ''); setFile(null); setTags(''); if (inputRef.current) inputRef.current.value = ''; await load(); } catch { setNotice('Could not upload the file. Please try again.'); } setUploading(false); }
+ async function confirmExpiry() { if (!pending) return; const res = await fetch(`/api/documents/${pending.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiryDate: expiry || null }) }); if (res.ok) { setPending(null); setNotice('Document saved. Expiry date confirmed.'); await load(); } else setNotice('Could not update the expiry date.'); }
+ async function remove(doc: Doc) { if (!window.confirm(`Delete “${doc.name}” and its stored file?`)) return; const res = await fetch(`/api/documents/${doc.id}`, { method: 'DELETE' }); if (res.ok) { setNotice('Document deleted.'); await load(); } else setNotice('Could not delete this document.'); }
+ return <>
+   <div className="page-heading"><div><div className="eyebrow" style={{ marginBottom: 8 }}>YOUR SECURE LIBRARY</div><h1>Documents</h1><p>Store the documents that matter. We’ll help keep an eye on renewal dates.</p></div><div className="heading-actions"><a className="button button-secondary" href="/api/export">↓ Export backup</a></div></div>
+   {notice && <div role="status" className={`notice ${notice.startsWith('Could') || notice.includes('failed') ? 'notice-error' : 'notice-success'}`} style={{ marginBottom: 16 }}>{notice}</div>}
+   <div className="detail-grid" style={{ gridTemplateColumns: 'minmax(0,1fr) 330px', alignItems: 'start' }}>
+    <section className="card"><div className="card-header"><div><h2 className="card-title">All documents <span className="count-badge" style={{ marginLeft: 8 }}>{docs.length}</span></h2><p className="card-subtitle">Search by name, category, or tag</p></div></div>
+      <div className="toolbar"><input className="search-input" aria-label="Search documents" placeholder="⌕  Search documents…" value={query} onChange={(e) => setQuery(e.target.value)}/><div className="filter-row">{['All', 'Expired', 'Urgent', 'Due soon', 'On track'].map((item) => <button key={item} className={`filter-chip ${filter === item ? 'active' : ''}`} onClick={() => setFilter(item)}>{item}</button>)}</div></div>
+      {loading ? <div className="loading-state">Loading documents…</div> : filtered.length === 0 ? <div className="empty-state"><div className="empty-icon">▤</div><strong>{docs.length ? 'No matching documents' : 'Your library is empty'}</strong><p>{docs.length ? 'Try a different search or filter.' : 'Upload a file to start tracking expiry dates.'}</p></div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>DOCUMENT</th><th>CATEGORY</th><th>EXPIRY</th><th>STATUS</th><th aria-label="Actions"/></tr></thead><tbody>{filtered.map((doc) => <tr key={doc.id}><td><Link className="doc-title" href={`/documents/${doc.id}`}>{doc.name}</Link><div className="doc-meta">{(doc.tags || []).map((t) => `#${t}`).join('  ')}</div></td><td>{doc.category || 'Other'}</td><td>{dateLabel(doc.expiryDate)}</td><td><span className={`status-pill ${urgency(doc).cls}`}>{urgency(doc).text}</span></td><td><button className="button button-secondary" style={{ minHeight: 31, padding: '0 9px', fontSize: 11 }} onClick={() => remove(doc)}>Delete</button></td></tr>)}</tbody></table></div>}
+    </section>
+    <div style={{ display: 'grid', gap: 16 }}>
+      <section className="card card-pad"><h2 className="card-title">Add a document</h2><p className="card-subtitle" style={{ marginBottom: 17 }}>Upload a PDF or text file to begin</p>
+        <form onSubmit={upload} style={{ display: 'grid', gap: 13 }}>
+          <label className="dropzone" htmlFor="document-file"><span aria-hidden="true" style={{ fontSize: 23 }}>↑</span><strong>{file ? file.name : 'Choose a file to upload'}</strong><span style={{ fontSize: 11 }}>PDF, TXT or CSV</span><input ref={inputRef} id="document-file" type="file" accept=".pdf,.txt,.csv,application/pdf,text/plain,text/csv" onChange={(e) => setFile(e.target.files?.[0] || null)} required style={{ position: 'absolute', width: 1, height: 1, clip: 'rect(0 0 0 0)', overflow: 'hidden' }}/></label>
+          <div className="form-field"><label className="field-label" htmlFor="category">Category</label><select id="category" className="select" value={category} onChange={(e) => setCategory(e.target.value)}>{categories.map((c) => <option key={c}>{c}</option>)}</select></div>
+          <div className="form-field"><label className="field-label" htmlFor="tags">Tags <span style={{ color: '#89958f', fontWeight: 400 }}>(optional)</span></label><input id="tags" className="field" placeholder="e.g. vehicle, annual" value={tags} onChange={(e) => setTags(e.target.value)}/></div>
+          <button type="submit" className="button button-primary" disabled={!file || uploading}>{uploading ? 'Uploading…' : 'Upload document  ↑'}</button>
+        </form><p className="field-help" style={{ marginTop: 11 }}>We look for expiry dates in the file. You’ll review the date before saving.</p>
+      </section>
+      <section style={{ padding: '0 4px', color: '#788780', fontSize: 11, lineHeight: 1.7 }}><strong style={{ color: '#4c6559' }}>Expiry date detection</strong><br/>Detected dates are suggestions only. Review each date carefully; you can also enter one manually if no date is found.</section>
     </div>
-  );
+   </div>
+   {pending && <div role="dialog" aria-modal="true" aria-labelledby="confirm-title" style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(13,31,26,.5)', display: 'grid', placeItems: 'center', padding: 18 }}><section className="card card-pad" style={{ width: 'min(100%, 490px)', boxShadow: 'var(--shadow)' }}><div className="eyebrow" style={{ marginBottom: 8 }}>REVIEW BEFORE SAVING</div><h2 id="confirm-title" className="card-title" style={{ fontSize: 19 }}>Confirm expiry date</h2><p className="card-subtitle" style={{ marginBottom: 15 }}>{pending.name}</p>{pending.candidates?.length ? <div className="alert-box" style={{ marginBottom: 15 }}><strong>Possible dates found</strong><div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>{pending.candidates.map((candidate) => <button key={candidate} className="filter-chip" onClick={() => setExpiry(candidate)}>{dateLabel(candidate)}</button>)}</div></div> : <div className="alert-box" style={{ marginBottom: 15 }}>No expiry date found in this file. Enter one manually, or leave it blank to add the date later.</div>}<label className="field-label" htmlFor="expiry-confirm">Expiry date</label><input id="expiry-confirm" type="date" className="field" value={expiry} onChange={(e) => setExpiry(e.target.value)}/><div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}><button className="button button-secondary" onClick={() => setPending(null)}>Review later</button><button className="button button-primary" onClick={confirmExpiry}>Confirm document</button></div></section></div>}
+ </>;
 }

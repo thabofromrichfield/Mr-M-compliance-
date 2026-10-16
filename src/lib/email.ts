@@ -1,38 +1,32 @@
 import nodemailer from 'nodemailer';
-import { ALERT_RECIPIENTS, APP_BASE_URL } from './config';
+import { ALERT_RECIPIENTS } from './config';
 
-export async function sendEmail(to: string[], subject: string, html: string) {
-  const recipients = to.length ? to : ALERT_RECIPIENTS;
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] || character);
+
+export async function sendEmail(_requestedRecipients: string[], subject: string, html: string) {
+  // The recipient list is deliberately sourced only from server configuration.
+  const recipients = ALERT_RECIPIENTS;
   if (!recipients.length) {
-    console.log('[email] no recipients configured; logging instead:\n', subject, '\n', html.replace(/<[^>]+>/g, ''));
+    console.info('[email] no fixed recipients configured; reminder not delivered:', subject);
     return { ok: true, logged: true };
   }
   if (!process.env.SMTP_HOST) {
-    console.log('[email] SMTP not configured; logging email to', recipients, '\n', subject);
+    console.info('[email] SMTP not configured; reminder not delivered to:', recipients.length, 'fixed recipient(s)');
     return { ok: true, logged: true };
   }
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587),
-    secure: false,
+    secure: Number(process.env.SMTP_PORT || 587) === 465,
     auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
   });
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || 'Compliance App <no-reply@example.com>',
-    to: recipients.join(','),
-    subject,
-    html,
-  });
+  await transporter.sendMail({ from: process.env.SMTP_FROM || 'ClearLedger <no-reply@example.com>', to: recipients.join(','), subject, html });
   return { ok: true };
 }
 
 export function renewalEmailHtml(docName: string, expiry: string, renewUrl: string) {
-  return `
-    <div style="font-family:sans-serif">
-      <h2>Document expiring soon</h2>
-      <p><strong>${docName}</strong> expires on ${expiry}.</p>
-      <p><a href="${renewUrl}" style="background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Mark as renewed</a></p>
-      <p>If you have already renewed, click the button to reset tracking.</p>
-    </div>
-  `;
+  const safeName = escapeHtml(docName);
+  const safeExpiry = escapeHtml(expiry);
+  const safeUrl = escapeHtml(renewUrl);
+  return `<div style="font-family:Arial,sans-serif;color:#17352e"><h2>Compliance reminder</h2><p><strong>${safeName}</strong> expires on ${safeExpiry}.</p><p><a href="${safeUrl}" style="background:#176b52;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Mark as renewed</a></p><p>If you have already renewed the document, use this link to update its status.</p></div>`;
 }

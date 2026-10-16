@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# local demo data and uploaded compliance documents
+/.data/
+
 # production
 /build
 

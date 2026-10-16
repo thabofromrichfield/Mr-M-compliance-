@@ -1,48 +1,65 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+
+const navItems = [
+  { href: '/dashboard', label: 'Overview', icon: '◫' },
+  { href: '/documents', label: 'Documents', icon: '▤' },
+  { href: '/audit', label: 'Activity log', icon: '↻' },
+  { href: '/settings', label: 'Settings', icon: '⚙' },
+];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
+  const [user, setUser] = useState<{ email: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me').then((r) => {
-      if (!r.ok) { router.replace('/login'); return null; }
-      return r.json();
-    }).then((d) => {
-      if (d?.user) setUser(d.user);
+    let live = true;
+    fetch('/api/auth/me', { cache: 'no-store' }).then(async (res) => {
+      if (!res.ok) { router.replace('/login'); return null; }
+      return res.json();
+    }).then((data) => {
+      if (!live) return;
+      if (data?.user) setUser(data.user);
+      else router.replace('/login');
       setLoading(false);
-    }).catch(() => { router.replace('/login'); });
+    }).catch(() => { if (live) { setLoading(false); router.replace('/login'); } });
+    return () => { live = false; };
   }, [router]);
 
-  async function logout() {
+  async function signOut() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.replace('/login');
+    router.refresh();
   }
 
-  if (loading) return <div className="p-8">Loading…</div>;
+  if (loading) return <div className="loading-state">Securing your workspace…</div>;
+  if (!user) return null;
+  const title = navItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))?.label ?? 'Workspace';
 
-  return (
-    <div className="min-h-screen flex">
-      <aside className="w-60 bg-slate-900 text-white p-4 flex flex-col gap-2">
-        <div className="text-lg font-bold mb-4">Compliance App</div>
-        <Link href="/dashboard" className={nav(pathname, '/dashboard')}>Dashboard</Link>
-        <Link href="/documents" className={nav(pathname, '/documents')}>Documents</Link>
-        <Link href="/audit" className={nav(pathname, '/audit')}>Audit Log</Link>
-        <Link href="/settings" className={nav(pathname, '/settings')}>Settings</Link>
-        <div className="mt-auto text-xs text-slate-400">{user?.email}</div>
-        <button onClick={logout} className="text-left text-sm text-slate-300 hover:text-white">Sign out</button>
-      </aside>
-      <main className="flex-1 p-6">{children}</main>
-    </div>
-  );
-}
-
-function nav(pathname: string, href: string) {
-  const active = pathname === href || pathname.startsWith(href + '/');
-  return `px-3 py-2 rounded ${active ? 'bg-slate-700' : 'hover:bg-slate-800'}`;
+  return <div className="app-frame">
+    <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
+      <div className="brand"><div className="brand-mark">C</div><div><div className="brand-title">ClearLedger</div><div className="brand-subtitle">Compliance workspace</div></div></div>
+      <div className="nav-label">Workspace</div>
+      <nav className="nav-list" aria-label="Main navigation">
+        {navItems.map((item) => <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className={`nav-link ${pathname === item.href || pathname.startsWith(`${item.href}/`) ? 'active' : ''}`}><span className="nav-icon" aria-hidden="true">{item.icon}</span>{item.label}</Link>)}
+      </nav>
+      <div className="sidebar-bottom">
+        <div className="storage-note"><strong>Private by design</strong>Your compliance files stay in your secure workspace.</div>
+        <div className="profile-row"><div className="avatar" aria-hidden="true">{user.email.slice(0, 1).toUpperCase()}</div><div className="profile-email" title={user.email}>{user.email}</div><button className="logout" aria-label="Sign out" title="Sign out" onClick={signOut}>↪</button></div>
+      </div>
+    </aside>
+    {menuOpen && <button aria-label="Close navigation" onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9, background: 'rgba(13,31,26,.42)', border: 0 }} />}
+    <section className="main-panel">
+      <header className="topbar">
+        <div className="topbar-left"><button className="mobile-toggle" onClick={() => setMenuOpen((v) => !v)} aria-label="Open navigation">☰</button><Link href="/dashboard" className="mobile-brand"><span className="brand-mark" style={{ width: 29, height: 29, borderRadius: 9, fontSize: 15 }}>C</span>ClearLedger</Link><span className="eyebrow">{title}</span></div>
+        <div className="topbar-date">{new Intl.DateTimeFormat('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date())}</div>
+      </header>
+      <main className="content">{children}</main>
+    </section>
+  </div>;
 }

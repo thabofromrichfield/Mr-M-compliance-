@@ -1,38 +1,40 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { currentUserFromToken } from '@/lib/auth';
-import { localStore } from '@/lib/store/local';
+import { localStore, uploadsDir } from '@/lib/store/local';
+import type { ComplianceDocument } from '@/lib/types';
+import { stripControlCharacters } from '@/lib/sanitize';
 import { logAudit } from '@/lib/audit';
 import { ZipArchive } from 'archiver';
-import { Readable } from 'stream';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get('session')?.value;
-  const user = currentUserFromToken(token);
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const docs = localStore.list<any>('documents');
-
-  const archive = new ZipArchive({ zlib: { level: 9 } });
+  if (!currentUserFromToken(token)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const docs = localStore.list<ComplianceDocument>('documents');
+  const archive = new ZipArchive({ zlib: { level: 6 } });
   const chunks: Buffer[] = [];
-  archive.on('data', (c: Buffer) => chunks.push(c));
-  const done = new Promise<Buffer>((resolve, reject) => {
+  archive.on('data', (chunk: Buffer) => chunks.push(chunk));
+  const complete = new Promise<Buffer>((resolve, reject) => {
     archive.on('end', () => resolve(Buffer.concat(chunks)));
     archive.on('error', reject);
   });
-
-  for (const d of docs) {
-    if (d.storagePath && require('fs').existsSync(d.storagePath)) {
-      archive.file(d.storagePath, { name: d.name });
+  const root = path.resolve(uploadsDir());
+  for (const doc of docs) {
+    const file = path.resolve(doc.storagePath);
+    if (file.startsWith(`${root}${path.sep}`) && fs.existsSync(file)) {
+      const entryName = stripControlCharacters(path.basename(doc.name)).replace(/[\\/]/g, '_').slice(0, 180) || `${doc.id}.bin`;
+      archive.file(file, { name: `documents/${entryName}` });
     }
   }
-  archive.append(JSON.stringify(docs, null, 2), { name: 'manifest.json' });
+  const manifest = docs.map((doc) => Object.fromEntries(Object.entries(doc).filter(([key]) => key !== 'storagePath')));
+  archive.append(JSON.stringify({ count: docs.length, documents: manifest }, null, 2), { name: 'manifest.json' });
   await archive.finalize();
-  const buf = await done;
-
-  logAudit(token, 'export', 'backup', undefined, `${docs.length} documents`);
-  return new NextResponse(buf as any, {
-    headers: {
-      'Content-Type': 'application/zip',
-      'Content-Disposition': 'attachment; filename="compliance-backup.zip"',
-    },
-  });
+  const zip = await complete;
+  logAudit(token, 'export', 'backup', undefined, `${docs.length} document records`);
+  return new NextResponse(new Uint8Array(zip), { headers: {
+    'Content-Type': 'application/zip',
+    'Content-Disposition': 'attachment; filename="clearledger-backup.zip"',
+    'Cache-Control': 'private, no-store',
+  } });
 }

@@ -1,49 +1,59 @@
-# Compliance App
+# ClearLedger — Compliance workspace
 
-Single-user web application for storing compliance/government documents and tracking expiry dates, with email alerts.
+A single-owner compliance document tracker. This is a clean rebuild of the app UI and sign-in flow, with design and engineering practices informed by the repository’s Engineering, Security, Testing, and Design agent playbooks.
 
-## Stack
+## Product rules
 
-- Frontend: Next.js (App Router) on Vercel
-- Backend (demo mode): local file + JSON store (no external services required)
-- Backend (production): Firebase (Auth, Firestore, Storage) + Vercel serverless/cron
+- One owner account; **there is no public registration page or registration API**.
+- A single configured email/password is provisioned by the server. The demo account is only enabled automatically in local development.
+- Documents support categories, tags, expiry-date detection from PDFs/text, manual date confirmation, renewal state, audit history, fixed-recipient reminders, and ZIP export.
+- Email renewal links can mark a document renewed without signing in.
+- No sharing, roles, multi-tenant access, document-data extraction beyond expiry dates, or snooze flow.
 
-The app runs in **demo mode** when Firebase env vars are not set, using a local file-based store under `.data/`. This makes it runnable locally without any cloud credentials.
+## Run locally
 
-## Getting started (demo mode)
-
-```bash
+```sh
 npm install
-cp .env.example .env.local
-# edit .env.local as needed
 npm run dev
 ```
 
-Open http://localhost:3000, register the first (and only) account, then upload documents.
+Open `http://localhost:3000/login` and use the **development-only** demo account:
 
-## Features
+- Email: `admin@compliance.app`
+- Password: `Compliance123!`
 
-- Upload, view, download, delete documents
-- Automatic expiry-date detection (PDF/text) with confirmation prompt
-- Manual expiry entry when no date is found
-- Dashboard colour-coded by urgency (green/amber/red)
-- Categories and tags
-- Mark as renewed (resets tracking)
-- Audit log
-- Backup/export as zip
-- Email alerts at 1 month / 1 week / 1 day before expiry
-- One-click "Mark as renewed" link in alert emails (no login)
-- Two-factor authentication (TOTP)
-- Fixed recipient whitelist for outbound email
+The local demo uses the ignored `.data/` directory. Do not use demo credentials or the local JSON store for production data.
 
-## Email alerts
+## Production configuration
 
-Alerts are sent by `GET /api/cron/alerts?secret=CRON_SECRET`. Configure Vercel Cron or any scheduler to call it daily. Recipients are fixed via `ALERT_RECIPIENTS` env var.
+Set these in the deployment environment before enabling sign-in:
 
-## Firebase (production)
+```env
+DEFAULT_EMAIL=owner@example.com
+DEFAULT_PASSWORD=<unique long password>
+SESSION_SECRET=<at least 32 random bytes>
+ALERT_RECIPIENTS=owner@example.com,another-fixed-recipient@example.com
+APP_BASE_URL=https://your-domain.example
+CRON_SECRET=<random secret>
+SMTP_HOST=...
+SMTP_PORT=587
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM=...
+```
 
-Set the `NEXT_PUBLIC_FIREBASE_*` and `FIREBASE_SERVICE_ACCOUNT_JSON` env vars and replace the local store calls with the Firebase modules in `src/lib/firebase/`. Security rules are in `firestore.rules` / `storage.rules`.
+Production sign-in deliberately fails closed if `DEFAULT_EMAIL` or `DEFAULT_PASSWORD` is missing. Registration remains disabled. For the scoped Firebase/Vercel deployment, complete Firebase service-account, encryption/backup, email transport, and protected daily-cron configuration before handling real documents. The checked-in Firebase rules/scaffold are not a substitute for deployment verification; the local JSON demo store is not durable on serverless infrastructure.
 
-## Environment variables
+## Engineering notes
 
-See `.env.example`.
+- App Router UI is responsive and uses semantic form controls, visible keyboard focus, and labelled navigation.
+- Session cookies are HTTP-only, SameSite=Lax, Secure in production, and limited to 12 hours. Passwords are bcrypt-hashed. Sign-in errors are generic and attempts are throttled in-process.
+- Audit and document APIs require an authenticated session. Alert destinations are environment-whitelisted.
+- Manual and detected expiry dates are suggestions; users confirm before saving.
+
+## Checks
+
+```sh
+npm run lint
+npm run build
+```
