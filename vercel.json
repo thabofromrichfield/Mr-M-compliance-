@@ -1,5 +1,5 @@
 {
   "crons": [
-    { "path": "/api/cron/alerts?secret=CRON_SECRET_PLACEHOLDER", "schedule": "0 8 * * *" }
+    { "path": "/api/cron/alerts", "schedule": "0 8 * * *" }
   ]
 }
