@@ -20,6 +20,8 @@ curl -fsS -c "$COOKIE_JAR" -H 'Content-Type: application/json' \
   -d "$(EMAIL="$EMAIL" PASSWORD="$PASSWORD" python3 -c 'import json,os; print(json.dumps({"email":os.environ["EMAIL"],"password":os.environ["PASSWORD"]}))')" \
   "$BASE_URL/api/auth/login" > "$TMP/login.json"
 python3 -c 'import json,sys; assert json.load(open(sys.argv[1])).get("ok")' "$TMP/login.json"
+curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/auth/me" > "$TMP/me.json"
+python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["user"]["email"]' "$TMP/me.json"
 
 printf 'Certificate of Compliance. Expires on 20 December 2028.\n' > "$TMP/certificate.txt"
 curl -fsS -b "$COOKIE_JAR" -F "file=@$TMP/certificate.txt;type=text/plain" -F 'category=Licence' -F 'tags=smoke,test' \

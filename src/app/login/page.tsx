@@ -1,9 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('admin@compliance.app');
   const [password, setPassword] = useState('');
   const [totp, setTotp] = useState('');
@@ -19,7 +17,8 @@ export default function LoginPage() {
       const result = await response.json();
       if (result.requires2fa) { setNeeds2fa(true); setBusy(false); return; }
       if (!response.ok) { setError(result.error || 'Sign-in failed. Check your details and try again.'); setBusy(false); return; }
-      router.replace('/dashboard'); router.refresh();
+      // A full navigation ensures the just-issued HTTP-only session cookie is included on the first protected-page request.
+      window.location.replace('/dashboard');
     } catch { setError('Could not reach the sign-in service. Please try again.'); setBusy(false); }
   }
 
