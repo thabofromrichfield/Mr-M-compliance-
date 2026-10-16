@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { sessionTokenFromRequest } from '@/lib/requestAuth';
 import { currentUserFromToken } from '@/lib/auth';
 import { localStore, uploadsDir } from '@/lib/store/local';
 import { logAudit } from '@/lib/audit';
@@ -16,13 +17,13 @@ function publicDoc(doc: ComplianceDocument): Omit<ComplianceDocument, 'storagePa
 }
 
 export async function GET(req: NextRequest) {
-  if (!currentUserFromToken(req.cookies.get('session')?.value)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!currentUserFromToken(sessionTokenFromRequest(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const docs = localStore.list<ComplianceDocument>('documents').map(publicDoc);
   return NextResponse.json({ documents: docs }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(req: NextRequest) {
-  const token = req.cookies.get('session')?.value;
+  const token = sessionTokenFromRequest(req);
   if (!currentUserFromToken(token)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   let form: FormData;
   try { form = await req.formData(); } catch { return NextResponse.json({ error: 'Invalid upload form.' }, { status: 400 }); }

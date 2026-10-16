@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   attempts.delete(key);
   const token = await createSession(user.id);
   logAudit(token, 'login', 'user', user.id);
-  const response = NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
+  const response = NextResponse.json({ ok: true, ...(process.env.NODE_ENV !== 'production' ? { sessionToken: token } : {}) }, { headers: { 'Cache-Control': 'no-store' } });
   response.cookies.set('session', token, sessionCookieOptions(req, 60 * 60 * 12));
   return response;
 }

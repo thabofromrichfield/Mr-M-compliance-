@@ -47,7 +47,7 @@ Production sign-in deliberately fails closed if `DEFAULT_EMAIL` or `DEFAULT_PASS
 ## Engineering notes
 
 - App Router UI is responsive and uses semantic form controls, visible keyboard focus, and labelled navigation.
-- Session cookies are HTTP-only, SameSite=Lax, Secure in production, and limited to 12 hours. Passwords are bcrypt-hashed. Sign-in errors are generic and attempts are throttled in-process.
+- Production sessions use HTTP-only cookies (Secure; SameSite=None/Partitioned in secure contexts) limited to 12 hours. In the embedded development preview only, an opaque 12-hour token is returned at sign-in and held in tab-scoped `sessionStorage` (with a restricted-storage fallback) for Bearer-authenticated API calls because some browsers suppress iframe cookies. Passwords are bcrypt-hashed; sign-in errors are generic and attempts are throttled in-process.
 - Audit and document APIs require an authenticated session. Alert destinations are environment-whitelisted.
 - Manual and detected expiry dates are suggestions; users confirm before saving.
 

@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { sessionTokenFromRequest } from '@/lib/requestAuth';
 import { currentUserFromToken } from '@/lib/auth';
 import { localStore, uploadsDir } from '@/lib/store/local';
 import { logAudit } from '@/lib/audit';
@@ -11,7 +12,7 @@ const isDate = (value: unknown): value is string => typeof value === 'string' &&
 const publicDoc = (doc: ComplianceDocument): Omit<ComplianceDocument, 'storagePath'> => Object.fromEntries(Object.entries(doc).filter(([key]) => key !== 'storagePath')) as Omit<ComplianceDocument, 'storagePath'>;
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  if (!currentUserFromToken(req.cookies.get('session')?.value)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!currentUserFromToken(sessionTokenFromRequest(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { id } = await ctx.params;
   const doc = localStore.get<ComplianceDocument>('documents', id);
   if (!doc) return NextResponse.json({ error: 'not found' }, { status: 404 });
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const token = req.cookies.get('session')?.value;
+  const token = sessionTokenFromRequest(req);
   if (!currentUserFromToken(token)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { id } = await ctx.params;
   const doc = localStore.get<ComplianceDocument>('documents', id);
@@ -56,7 +57,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 }
 
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const token = req.cookies.get('session')?.value;
+  const token = sessionTokenFromRequest(req);
   if (!currentUserFromToken(token)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { id } = await ctx.params;
   const doc = localStore.get<ComplianceDocument>('documents', id);

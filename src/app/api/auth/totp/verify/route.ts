@@ -1,11 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { sessionTokenFromRequest } from '@/lib/requestAuth';
 import { currentUserFromToken, type User } from '@/lib/auth';
 import { localStore } from '@/lib/store/local';
 import { verifyToken } from '@/lib/totp';
 import { logAudit } from '@/lib/audit';
 
 export async function POST(req: NextRequest) {
-  const token = req.cookies.get('session')?.value;
+  const token = sessionTokenFromRequest(req);
   const user = currentUserFromToken(token);
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { code } = await req.json();

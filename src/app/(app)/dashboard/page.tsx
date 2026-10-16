@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/clientFetch';
 
 type Doc = { id: string; name: string; category: string; tags?: string[]; expiryDate?: string | null; status: string; updatedAt?: string };
 function daysRemaining(date?: string | null) { if (!date) return null; return Math.ceil((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`)) / 86400000); }
@@ -9,7 +10,7 @@ function displayDate(date?: string | null) { if (!date) return 'Not set'; return
 
 export default function Dashboard() {
   const [docs, setDocs] = useState<Doc[]>([]); const [loading, setLoading] = useState(true);
-  useEffect(() => { let live = true; fetch('/api/documents', { cache: 'no-store' }).then((r) => r.json()).then((d) => { if (live) setDocs(d.documents || []); }).finally(() => { if (live) setLoading(false); }); return () => { live = false; }; }, []);
+  useEffect(() => { let live = true; apiFetch('/api/documents', { cache: 'no-store' }).then((r) => r.json()).then((d) => { if (live) setDocs(d.documents || []); }).finally(() => { if (live) setLoading(false); }); return () => { live = false; }; }, []);
   const attention = useMemo(() => docs.filter((d) => { const n = daysRemaining(d.expiryDate); return d.status !== 'renewed' && n !== null && n <= 30; }).sort((a, b) => (daysRemaining(a.expiryDate) ?? 9999) - (daysRemaining(b.expiryDate) ?? 9999)), [docs]);
   const expired = docs.filter((d) => d.status !== 'renewed' && (daysRemaining(d.expiryDate) ?? 1) < 0).length;
   const dueSoon = docs.filter((d) => d.status !== 'renewed' && (daysRemaining(d.expiryDate) ?? 9999) >= 0 && (daysRemaining(d.expiryDate) ?? 9999) <= 30).length;

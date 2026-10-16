@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { storePreviewSession } from '@/lib/clientFetch';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@compliance.app');
@@ -17,7 +18,8 @@ export default function LoginPage() {
       const result = await response.json();
       if (result.requires2fa) { setNeeds2fa(true); setBusy(false); return; }
       if (!response.ok) { setError(result.error || 'Sign-in failed. Check your details and try again.'); setBusy(false); return; }
-      // A full navigation ensures the just-issued HTTP-only session cookie is included on the first protected-page request.
+      if (result.sessionToken) storePreviewSession(result.sessionToken);
+      // The tab-scoped bearer fallback keeps Arena's embedded preview authenticated even where iframe cookies are blocked.
       window.location.replace('/dashboard');
     } catch { setError('Could not reach the sign-in service. Please try again.'); setBusy(false); }
   }

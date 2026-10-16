@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { sessionTokenFromRequest } from '@/lib/requestAuth';
 import { currentUserFromToken } from '@/lib/auth';
 import { localStore, uploadsDir } from '@/lib/store/local';
 import type { ComplianceDocument } from '@/lib/types';
@@ -9,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export async function GET(req: NextRequest) {
-  const token = req.cookies.get('session')?.value;
+  const token = sessionTokenFromRequest(req);
   if (!currentUserFromToken(token)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const docs = localStore.list<ComplianceDocument>('documents');
   const archive = new ZipArchive({ zlib: { level: 6 } });

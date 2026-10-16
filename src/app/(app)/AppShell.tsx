@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { apiFetch, clearPreviewSession } from '@/lib/clientFetch';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: '◫' },
@@ -19,7 +20,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let live = true;
-    fetch('/api/auth/me', { cache: 'no-store' }).then(async (res) => {
+    apiFetch('/api/auth/me', { cache: 'no-store' }).then(async (res) => {
       if (!res.ok) { router.replace('/login'); return null; }
       return res.json();
     }).then((data) => {
@@ -32,7 +33,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   async function signOut() {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await apiFetch('/api/auth/logout', { method: 'POST' });
+    clearPreviewSession();
     router.replace('/login');
     router.refresh();
   }

@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { apiFetch, downloadFromApi } from '@/lib/clientFetch';
 
 type Doc = { id: string; name: string; category: string; tags?: string[]; expiryDate?: string | null; status: string; size?: number; candidates?: string[] };
 const categories = ['Licence', 'Insurance', 'Identity', 'Business certificate', 'Tax', 'Other'];
@@ -9,18 +10,19 @@ function urgency(doc: Doc) { if (doc.status === 'renewed') return { text: 'Renew
 
 export default function DocumentsPage() {
  const [docs, setDocs] = useState<Doc[]>([]); const [loading, setLoading] = useState(true); const [file, setFile] = useState<File | null>(null); const [category, setCategory] = useState('Other'); const [tags, setTags] = useState(''); const [uploading, setUploading] = useState(false); const [pending, setPending] = useState<Doc | null>(null); const [expiry, setExpiry] = useState(''); const [query, setQuery] = useState(''); const [filter, setFilter] = useState('All'); const [notice, setNotice] = useState(''); const inputRef = useRef<HTMLInputElement>(null);
- const load = useCallback(async () => { const res = await fetch('/api/documents', { cache: 'no-store' }); const data = await res.json(); setDocs(data.documents || []); setLoading(false); }, []);
+ const load = useCallback(async () => { const res = await apiFetch('/api/documents', { cache: 'no-store' }); const data = await res.json(); setDocs(data.documents || []); setLoading(false); }, []);
  useEffect(() => {
   // This effect starts an async server fetch; state is updated only after its response resolves.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   void load().catch(() => setLoading(false));
  }, [load]);
  const filtered = useMemo(() => docs.filter((d) => (filter === 'All' || urgency(d).text === filter) && `${d.name} ${d.category} ${(d.tags || []).join(' ')}`.toLowerCase().includes(query.toLowerCase())), [docs, filter, query]);
- async function upload(e: React.FormEvent) { e.preventDefault(); if (!file) return; setUploading(true); setNotice(''); const fd = new FormData(); fd.append('file', file); fd.append('category', category); fd.append('tags', tags); try { const res = await fetch('/api/documents', { method: 'POST', body: fd }); const data = await res.json(); if (!res.ok) { setNotice(data.error || 'Upload failed. Please try again.'); setUploading(false); return; } setPending(data.document); setExpiry(data.document.expiryDate || ''); setFile(null); setTags(''); if (inputRef.current) inputRef.current.value = ''; await load(); } catch { setNotice('Could not upload the file. Please try again.'); } setUploading(false); }
- async function confirmExpiry() { if (!pending) return; const res = await fetch(`/api/documents/${pending.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiryDate: expiry || null }) }); if (res.ok) { setPending(null); setNotice('Document saved. Expiry date confirmed.'); await load(); } else setNotice('Could not update the expiry date.'); }
- async function remove(doc: Doc) { if (!window.confirm(`Delete “${doc.name}” and its stored file?`)) return; const res = await fetch(`/api/documents/${doc.id}`, { method: 'DELETE' }); if (res.ok) { setNotice('Document deleted.'); await load(); } else setNotice('Could not delete this document.'); }
+ async function upload(e: React.FormEvent) { e.preventDefault(); if (!file) return; setUploading(true); setNotice(''); const fd = new FormData(); fd.append('file', file); fd.append('category', category); fd.append('tags', tags); try { const res = await apiFetch('/api/documents', { method: 'POST', body: fd }); const data = await res.json(); if (!res.ok) { setNotice(data.error || 'Upload failed. Please try again.'); setUploading(false); return; } setPending(data.document); setExpiry(data.document.expiryDate || ''); setFile(null); setTags(''); if (inputRef.current) inputRef.current.value = ''; await load(); } catch { setNotice('Could not upload the file. Please try again.'); } setUploading(false); }
+ async function confirmExpiry() { if (!pending) return; const res = await apiFetch(`/api/documents/${pending.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiryDate: expiry || null }) }); if (res.ok) { setPending(null); setNotice('Document saved. Expiry date confirmed.'); await load(); } else setNotice('Could not update the expiry date.'); }
+ async function remove(doc: Doc) { if (!window.confirm(`Delete “${doc.name}” and its stored file?`)) return; const res = await apiFetch(`/api/documents/${doc.id}`, { method: 'DELETE' }); if (res.ok) { setNotice('Document deleted.'); await load(); } else setNotice('Could not delete this document.'); }
+ async function downloadBackup() { try { await downloadFromApi('/api/export', 'clearledger-backup.zip'); } catch { setNotice('Could not download the backup. Please try again.'); } }
  return <>
-   <div className="page-heading"><div><div className="eyebrow" style={{ marginBottom: 8 }}>YOUR SECURE LIBRARY</div><h1>Documents</h1><p>Store the documents that matter. We’ll help keep an eye on renewal dates.</p></div><div className="heading-actions"><a className="button button-secondary" href="/api/export">↓ Export backup</a></div></div>
+   <div className="page-heading"><div><div className="eyebrow" style={{ marginBottom: 8 }}>YOUR SECURE LIBRARY</div><h1>Documents</h1><p>Store the documents that matter. We’ll help keep an eye on renewal dates.</p></div><div className="heading-actions"><button className="button button-secondary" onClick={downloadBackup}>↓ Export backup</button></div></div>
    {notice && <div role="status" className={`notice ${notice.startsWith('Could') || notice.includes('failed') ? 'notice-error' : 'notice-success'}`} style={{ marginBottom: 16 }}>{notice}</div>}
    <div className="detail-grid" style={{ gridTemplateColumns: 'minmax(0,1fr) 330px', alignItems: 'start' }}>
     <section className="card"><div className="card-header"><div><h2 className="card-title">All documents <span className="count-badge" style={{ marginLeft: 8 }}>{docs.length}</span></h2><p className="card-subtitle">Search by name, category, or tag</p></div></div>

@@ -7,7 +7,8 @@ The browser is untrusted. It may submit arbitrary JSON, filenames, tags, dates, 
 ## Threat controls implemented
 
 - Single-owner account seeding; unknown accounts receive the same generic sign-in failure as invalid passwords.
-- bcrypt password hashes, HTTP-only sessions, Secure SameSite=None + Partitioned cookies in Arena iframe previews (Lax on direct local HTTP), 12-hour browser session lifetime, and simple per-IP/email sign-in throttling.
+- bcrypt password hashes, HTTP-only sessions, Secure SameSite=None + Partitioned cookies in secure/iframe contexts (Lax on direct local HTTP), 12-hour browser session lifetime, and simple per-IP/email sign-in throttling.
+- The development preview also returns its opaque session token to the login client and keeps it in tab-scoped `sessionStorage` (with a storage-restriction fallback to `localStorage`); authenticated API calls send it as a Bearer token. This fallback avoids browser iframe cookie policies. Production builds never return the token and rely on the HTTP-only cookie.
 - TOTP can be enabled by the owner. Session lookups and authorization occur server-side.
 - Upload size and extension allowlists, PDF signature check, generated storage identifiers, private local file permissions, safe download paths, and no storage path in API responses/export manifest.
 - Fixed recipient allowlist is read only from server configuration. User-controlled input cannot select email destinations.

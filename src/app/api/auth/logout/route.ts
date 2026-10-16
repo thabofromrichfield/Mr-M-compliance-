@@ -1,10 +1,11 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { sessionTokenFromRequest } from '@/lib/requestAuth';
 import { destroySession } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { sessionCookieOptions } from '@/lib/sessionCookie';
 
 export async function POST(req: NextRequest) {
-  const token = req.cookies.get('session')?.value;
+  const token = sessionTokenFromRequest(req);
   if (token) {
     logAudit(token, 'logout', 'user');
     destroySession(token);
