@@ -23,7 +23,10 @@ export function clearPreviewSession() {
 export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
   const token = readPreviewSession();
-  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('X-ClearLedger-Session', token);
+  }
   return fetch(input, { ...init, headers, credentials: 'same-origin' });
 }
 

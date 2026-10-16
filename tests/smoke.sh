@@ -32,7 +32,7 @@ curl -fsS -c "$COOKIE_JAR" -H 'Content-Type: application/json' \
 python3 -c 'import json,sys; assert json.load(open(sys.argv[1])).get("ok")' "$TMP/login.json"
 SESSION_TOKEN=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("sessionToken", ""))' "$TMP/login.json")
 [[ -n "$SESSION_TOKEN" ]] || { echo 'Development sign-in did not return the preview session token.'; exit 1; }
-AUTH=(-H "Authorization: Bearer $SESSION_TOKEN")
+AUTH=(-H "Authorization: Bearer $SESSION_TOKEN" -H "X-ClearLedger-Session: $SESSION_TOKEN")
 curl -fsS "${AUTH[@]}" "$BASE_URL/api/auth/me" > "$TMP/me.json"
 python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["user"]["email"]' "$TMP/me.json"
 
