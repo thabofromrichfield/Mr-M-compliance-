@@ -6,7 +6,15 @@ EMAIL="${DEFAULT_EMAIL:-admin@compliance.app}"
 PASSWORD="${DEFAULT_PASSWORD:-Compliance123!}"
 TMP="$(mktemp -d)"
 COOKIE_JAR="$TMP/cookies.txt"
-trap 'rm -rf "$TMP"' EXIT
+RESTORE_USERS=0
+restore_smoke_state() {
+  if [[ "$RESTORE_USERS" == "1" && -f "$TMP/users.backup" ]]; then
+    rm -f .data/users.json
+    mv "$TMP/users.backup" .data/users.json
+  fi
+  rm -rf "$TMP"
+}
+trap restore_smoke_state EXIT
 
 status=$(curl -s -o "$TMP/unauth.json" -w '%{http_code}' "$BASE_URL/api/documents")
 [[ "$status" == "401" ]] || { echo "Expected unauthenticated documents API to return 401; got $status"; exit 1; }
@@ -35,6 +43,20 @@ SESSION_TOKEN=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).
 AUTH=(-H "Authorization: Bearer $SESSION_TOKEN" -H "X-ClearLedger-Session: $SESSION_TOKEN")
 curl -fsS "${AUTH[@]}" "$BASE_URL/api/auth/me" > "$TMP/me.json"
 python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["user"]["email"]' "$TMP/me.json"
+
+# Simulate a fresh serverless instance with no shared user file. Signed sessions
+# must still authenticate, and the configured owner must retain a stable ID.
+if [[ -f .data/users.json ]]; then
+  mv .data/users.json "$TMP/users.backup"
+  RESTORE_USERS=1
+  status=$(curl -s "${AUTH[@]}" -o "$TMP/isolation.json" -w '%{http_code}' "$BASE_URL/api/documents")
+  [[ "$status" == "200" ]] || { echo "Expected signed session to survive an isolated serverless filesystem; got $status"; exit 1; }
+  curl -fsS "${AUTH[@]}" "$BASE_URL/api/auth/me" > "$TMP/isolated-me.json"
+  python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["user"]["email"]' "$TMP/isolated-me.json"
+  rm -f .data/users.json
+  mv "$TMP/users.backup" .data/users.json
+  RESTORE_USERS=0
+fi
 
 # The authenticated user should be able to reach every primary workspace screen.
 for page in dashboard documents audit settings; do

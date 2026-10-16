@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-/** Use the opaque session cookie where available, with a bearer fallback for iframe previews. */
+/** Use the session cookie where available, with signed-token headers for iframe previews. */
 export function sessionTokenFromRequest(request: NextRequest): string | undefined {
   const candidates = [
     request.headers.get('x-clearledger-session') || '',
