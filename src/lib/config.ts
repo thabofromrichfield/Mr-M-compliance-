@@ -4,6 +4,8 @@ export const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-secret-change-m
 export const DATA_DIR = process.env.DATA_DIR || './.data';
 export const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:3000';
 export const CRON_SECRET = process.env.CRON_SECRET || '';
+export const DEFAULT_EMAIL = (process.env.DEFAULT_EMAIL || 'admin@compliance.app').trim().toLowerCase();
+export const DEFAULT_PASSWORD = process.env.DEFAULT_PASSWORD || 'Compliance123!';
 export const ALERT_RECIPIENTS = (process.env.ALERT_RECIPIENTS || '')
   .split(',')
   .map((s) => s.trim())

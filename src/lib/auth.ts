@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { localStore } from './store/local';
+import { DEFAULT_EMAIL, DEFAULT_PASSWORD } from './config';
 
 export interface User {
   id: string;
@@ -73,4 +74,18 @@ export function currentUserFromToken(token: string | undefined): User | undefine
 
 export function userCount() {
   return localStore.list<User>('users').length;
+}
+
+
+export async function ensureDefaultUser() {
+  if (userCount() > 0) return;
+  const passwordHash = await hashPassword(DEFAULT_PASSWORD);
+  const user = {
+    id: crypto.randomUUID(),
+    email: DEFAULT_EMAIL,
+    passwordHash,
+    totpEnabled: false,
+    createdAt: new Date().toISOString(),
+  };
+  localStore.insert('users', user);
 }

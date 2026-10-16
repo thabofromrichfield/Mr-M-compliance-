@@ -1,10 +1,11 @@
 import { NextResponse, NextRequest } from 'next/server';
 import crypto from 'crypto';
-import { findUserByEmail, verifyPassword, createSession } from '@/lib/auth';
+import { findUserByEmail, verifyPassword, createSession, ensureDefaultUser } from '@/lib/auth';
 import { verifyToken } from '@/lib/totp';
 import { logAudit } from '@/lib/audit';
 
 export async function POST(req: NextRequest) {
+  await ensureDefaultUser();
   const { email, password, totp } = await req.json();
   const user = findUserByEmail(String(email || ''));
   if (!user) return NextResponse.json({ error: 'invalid credentials' }, { status: 401 });
