@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Demo credentials: `admin@compliance.app` / `Compliance123!`. These defaults apply only outside production. Local metadata lives in `.data/`; files are encrypted with a demo-only key before being written to `.data/files/`. Do not use demo settings for real documents.
+Demo credentials: `admin@compliance.app` / `Compliance123!`. These defaults apply only outside production. Enable an authenticator in **Settings**; once enabled, each subsequent sign-in requires its code. Local metadata lives in `.data/`; files are encrypted with a demo-only key before being written to `.data/files/`. Demo mode has no configured email recipients or SMTP service. Do not use demo settings for real documents.
 
 ## Production deployment (Vercel + Firebase)
 
