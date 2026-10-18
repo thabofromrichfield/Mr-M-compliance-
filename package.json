@@ -1,0 +1,38 @@
+{
+  "name": "clearledger-compliance",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "lint": "eslint",
+    "test:smoke": "bash tests/smoke.sh"
+  },
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "bcryptjs": "^3.0.3",
+    "fflate": "^0.8.3",
+    "firebase-admin": "^14.5.0",
+    "jsonwebtoken": "^9.0.3",
+    "next": "^16.4.2",
+    "nodemailer": "^10.1.2",
+    "otplib": "^13.5.0",
+    "pdfjs-dist": "^6.4.299",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/archiver": "^8.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.13.4",
+    "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.71.2"
+  }
+}
