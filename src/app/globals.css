@@ -292,15 +292,15 @@ body { background-image: radial-gradient(ellipse at 88% 0, #eaf1ff 0, transparen
   .preview-backdrop { padding: 10px; }
   .duplicate-modal, .renewal-modal { padding: 21px; }
 }
-.preview-link {
-  display: inline-flex; align-items: center; justify-content: flex-start;
-  min-height: 22px; padding: 1px 0; color: #526a97; background: transparent;
-  border: 0; border-radius: 0; font-size: 10px; font-weight: 600;
-  line-height: 1.4; text-decoration: none; white-space: nowrap; cursor: pointer;
-  transition: color .16s ease;
+.preview-cta {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 28px; padding: 4px 10px; color: #405574; background: #fff;
+  border: 1px solid #d8e0eb; border-radius: 6px; font-size: 10px; font-weight: 650;
+  line-height: 1.2; white-space: nowrap; cursor: pointer; box-shadow: none;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
 }
-.preview-link:hover { color: #244da9; text-decoration: underline; text-underline-offset: 3px; }
-.preview-link:focus-visible { outline: 2px solid #7896e7; outline-offset: 3px; }
-.doc-inline-preview { margin-top: 5px; }
-.dashboard-preview { margin-top: 5px; }
+.preview-cta:hover { color: #244da9; background: #f5f8fd; border-color: #b8c7df; }
+.preview-cta:focus-visible { outline: 2px solid #7896e7; outline-offset: 2px; }
+.doc-inline-preview { margin-top: 6px; }
+.dashboard-preview { margin-top: 6px; }
 .preview-inline-error { display: block; margin-top: 4px; color: #a83a34; font-size: 9px; }

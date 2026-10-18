@@ -6,7 +6,7 @@ import type { ComplianceDocument } from '@/lib/types';
 
 type Props = { document: ComplianceDocument; className?: string; label?: string };
 
-export function DocumentPreviewButton({ document, className = 'preview-link', label = 'Preview' }: Props) {
+export function DocumentPreviewButton({ document, className = 'preview-cta', label = 'Preview' }: Props) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
 
