@@ -15,7 +15,8 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   if (!doc) return jsonError('Document not found.', 404);
   try {
     const bytes = await readEncryptedFile(id);
-    await audit(user, 'document_downloaded', 'document', id);
-    return new NextResponse(new Uint8Array(bytes), { headers: { 'Content-Type': doc.mimeType, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(doc.name)}`, 'Cache-Control': 'private, no-store' } });
+    const preview = req.nextUrl.searchParams.get('preview') === '1';
+    await audit(user, preview ? 'document_previewed' : 'document_downloaded', 'document', id);
+    return new NextResponse(new Uint8Array(bytes), { headers: { 'Content-Type': doc.mimeType, 'Content-Disposition': `${preview ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(doc.name)}`, 'Cache-Control': 'private, no-store' } });
   } catch { return jsonError('The document could not be decrypted or retrieved.', 503); }
 }

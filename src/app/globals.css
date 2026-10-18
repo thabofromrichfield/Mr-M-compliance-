@@ -157,7 +157,7 @@ body { background-image: radial-gradient(ellipse at 88% 0, #eaf1ff 0, transparen
 .twofa-box { background: #f6f8fc; border-color: #e4eaf3; border-radius: 10px; }
 .qr-image { border-color: #e0e6f0; border-radius: 10px; }
 
-/* Sign-in and one-click renewal layouts */
+/* Sign-in and variable-term renewal layouts */
 .login-page { background: #fff; }
 .login-story {
   background: radial-gradient(circle at 82% 18%, #344c7b 0, transparent 35%), linear-gradient(145deg, #1b2d4d, #14243f 75%);
@@ -244,4 +244,51 @@ body { background-image: radial-gradient(ellipse at 88% 0, #eaf1ff 0, transparen
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Duplicate confirmation, in-app document preview and variable-term renewals */
+.duplicate-modal { width: min(600px, 100%); }
+.duplicate-match-list { display: grid; gap: 9px; max-height: 230px; overflow: auto; margin: 17px 0; }
+.duplicate-match {
+  display: flex; align-items: flex-start; gap: 11px; padding: 12px;
+  border: 1px solid #e2e8f1; border-radius: 10px; background: #f8faff;
+}
+.duplicate-match-icon {
+  width: 28px; height: 28px; display: grid; place-items: center; flex: 0 0 auto;
+  color: #315fdb; background: #eaf0ff; border-radius: 50%; font-size: 13px; font-weight: 800;
+}
+.duplicate-match strong, .duplicate-match small, .duplicate-match-kind { display: block; }
+.duplicate-match strong { color: #283a55; font-size: 11px; }
+.duplicate-match small { margin-top: 4px; color: #748198; font-size: 10px; }
+.duplicate-match-kind { margin-top: 5px; color: #506eae; font-size: 9px; font-weight: 700; }
+.duplicate-detected-date { padding: 10px 12px; color: #536782; background: #f3f6fb; border-radius: 8px; font-size: 10px; }
+.duplicate-question { margin: 16px 0 0 !important; color: #354760 !important; font-weight: 700; }
+.renewal-modal { width: min(540px, 100%); }
+.renew-form { display: grid; gap: 10px; margin-top: 18px; }
+.renew-form label { color: #4c5f7a; font-size: 11px; font-weight: 700; }
+.renew-form .primary-btn { margin-top: 5px; }
+.renew-error { margin: 12px 0; }
+.preview-backdrop { padding: 20px; }
+.certificate-preview-modal {
+  width: min(1120px, 100%); height: min(88vh, 900px); max-height: 900px;
+  display: flex; flex-direction: column; gap: 0; overflow: hidden; padding: 0;
+}
+.certificate-preview-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  padding: 17px 20px; border-bottom: 1px solid #e5eaf2; background: #fff;
+}
+.certificate-preview-header h2 { margin: 5px 0 2px; color: #263852; font-size: 16px; }
+.certificate-preview-header p { margin: 0; color: #7a879b; font-size: 10px; }
+.certificate-preview-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.certificate-preview-frame { width: 100%; min-height: 0; flex: 1; border: 0; background: #edf1f6; }
+.certificate-image-stage { min-height: 0; flex: 1; display: grid; place-items: center; overflow: auto; padding: 20px; background: #edf1f6; }
+.certificate-image-stage img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; background: #fff; box-shadow: 0 8px 28px #15274722; }
+.preview-unavailable { flex: 1; display: grid; align-content: center; gap: 7px; }
+@media (max-width: 700px) {
+  .certificate-preview-modal { width: 100%; height: 88vh; }
+  .certificate-preview-header { align-items: flex-start; padding: 14px; }
+  .certificate-preview-header h2 { max-width: 52vw; overflow-wrap: anywhere; }
+  .certificate-preview-actions .secondary-btn { padding: 8px; font-size: 10px; }
+  .preview-backdrop { padding: 10px; }
+  .duplicate-modal, .renewal-modal { padding: 21px; }
 }

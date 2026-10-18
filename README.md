@@ -1,14 +1,15 @@
 # ClearLedger
 
-A private, single-owner workspace for government, business, licence, insurance, and other compliance documents. ClearLedger tracks expiry dates, sends fixed-recipient reminders, and supports one-click renewals without requiring the recipient to sign in.
+A private, single-owner workspace for government, business, licence, insurance, and other compliance documents. ClearLedger tracks expiry dates, sends fixed-recipient reminders, and lets approved alert recipients record the actual new expiry date without signing in.
 
 ## What it does
 
-- Upload PDF, DOCX, TXT, CSV, and common image files (up to 4 MB per file, keeping uploads compatible with Vercel's request-size cap), view/download, and remove them. Text-based PDF, DOCX, TXT, and CSV files are scanned for expiry dates; images use the manual-date fallback.
+- Upload PDF, DOCX, TXT, CSV, and common image files (up to 4 MB per file, keeping uploads compatible with Vercel's request-size cap), preview supported files, download, and remove them. Text-based PDF, DOCX, TXT, and CSV files are scanned for expiry dates; images use the manual-date fallback.
+- Checks uploads against existing files and matching document names/expiry metadata before storing them. If a likely duplicate is found, the owner can cancel or explicitly confirm adding another copy; file fingerprints are checked in memory and not persisted.
 - Scans document text **only for an expiry date** near expiry wording. Extracted text is transient in memory and is never written to a database, logs, or storage. The proposed date is shown for confirmation. If no date is found, the owner must enter one manually.
 - Organises documents with categories and tags; urgency is shown as safe (green), approaching (amber), or urgent/expired (red).
 - Sends alerts 30, 7, and 1 day before expiry to a server-configured email allowlist. Request bodies cannot supply recipients. There is deliberately no snooze function.
-- Adds a signed, one-use “Mark as renewed” link to each alert. It works without a login and moves the expiry to the same calendar day next year, resetting alert flags. Edit the date in the workspace if the renewal term differs.
+- Adds a signed, one-use renewal link to each alert. It works without a login and asks for the actual new expiry date before updating the record; renewal periods are never assumed to be annual.
 - Records sign-ins, document views/changes/downloads, alert sends, renewals, backup exports, and security-setting changes in the audit log.
 - Supports TOTP two-factor authentication and on-demand ZIP export.
 - Has no registration, sharing, user roles, or multi-tenant functionality.
@@ -47,4 +48,4 @@ npm run test:smoke
 npm audit
 ```
 
-The smoke test exercises sign-in, protected APIs, upload and expiry-date confirmation, encrypted download, metadata edits, TOTP setup, no-login renewal, audit history, ZIP backup, logout, and the absence of registration.
+The smoke test exercises sign-in, duplicate detection and override, upload and expiry-date confirmation, encrypted preview/download, variable-term no-login renewal, TOTP setup, audit history, ZIP backup, logout, and the absence of registration.
