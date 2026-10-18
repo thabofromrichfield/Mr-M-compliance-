@@ -3,7 +3,7 @@ set -euo pipefail
 BASE_URL="${BASE_URL:-http://localhost:3000}"
 EMAIL="${OWNER_EMAIL:-admin@compliance.app}"
 PASSWORD="${OWNER_PASSWORD:-Compliance123!}"
-SECRET="${SESSION_SECRET:-local-demo-session-secret-please-change}"
+SECRET="${SESSION_SECRET:-}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -14,6 +14,9 @@ status=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/api/cron/alerts")
 curl -fsS -H 'Content-Type: application/json' -d "$(EMAIL="$EMAIL" PASSWORD="$PASSWORD" python3 -c 'import json,os;print(json.dumps({"email":os.environ["EMAIL"],"password":os.environ["PASSWORD"]}))')" "$BASE_URL/api/auth/login" > "$TMP/login.json"
 TOKEN=$(node -e "process.stdout.write(require('$TMP/login.json').sessionToken||'')")
 [[ -n "$TOKEN" ]] || { echo 'No preview token was returned.'; exit 1; }
+if [[ -z "$SECRET" ]]; then
+  SECRET=$(node -e "const fs=require('node:fs'),os=require('node:os'),path=require('node:path'); process.stdout.write(fs.readFileSync(path.join(os.tmpdir(),'clearledger-demo','session-secret'),'utf8'))")
+fi
 AUTH=(-H "Authorization: Bearer $TOKEN" -H "X-ClearLedger-Session: $TOKEN")
 curl -fsS "${AUTH[@]}" "$BASE_URL/api/auth/me" > "$TMP/me.json"
 node -e "if(require('$TMP/me.json').user.email!=='$EMAIL')process.exit(1)"

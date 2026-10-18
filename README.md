@@ -10,6 +10,15 @@ email are disabled regardless of any existing Firebase/SMTP settings. Documents,
 audit records and settings use temporary local storage (including on serverless hosts).
 Data can reset on restart/redeploy and is not shared reliably across serverless
 instances. This is a shared public test account: use sample documents only.
+The demo is preloaded with all 15 rows from the supplied `demo_certs.csv` and
+all 14 supplied PDFs. DEMO-015 is metadata-only because no certificate was supplied.
+Certificate details retain every CSV column, including issuer, dates, source URL,
+original status and renewal costs. Live urgency uses expiry dates, not the CSV's
+snapshot day counts. PDFs are bundled server-side, never in the public assets folder;
+preview, download and ZIP export require sign-in. Clearing temporary document storage
+restores the seed dataset. Changes and deletions survive within the same temporary instance.
+The login page does not display the password. Sessions use a random per-instance signing
+secret; set a random `SESSION_SECRET` (32+ characters) for consistency across instances.
 Email reminders are simulated, not delivered. Do not use this mode for real data.
 
 To explicitly restore the externally backed mode, set `DEMO_MODE=false` and configure

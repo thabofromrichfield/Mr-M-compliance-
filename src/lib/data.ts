@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { DEMO_MODE, isProduction } from './config';
 import { firebaseReady, firestore } from './firebase';
+import demoSeed from './demo-seed.json';
 
 export type Collection = 'documents' | 'audit' | 'settings';
 const ROOT = DEMO_MODE ? path.join(os.tmpdir(), 'clearledger-demo') : path.join(process.cwd(), '.data');
@@ -14,7 +15,10 @@ function filePath(collection: Collection) {
 }
 function localList<T>(collection: Collection): T[] {
   const file = filePath(collection);
-  if (!fs.existsSync(file)) return [];
+  if (!fs.existsSync(file)) {
+    if (DEMO_MODE && collection === 'documents') return structuredClone(demoSeed.documents) as T[];
+    return [];
+  }
   try {
     const value: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
     return Array.isArray(value) ? value as T[] : [];

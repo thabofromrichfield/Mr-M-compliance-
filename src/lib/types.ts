@@ -13,6 +13,8 @@ export interface ComplianceDocument {
   alertsSent: { d30: boolean; d7: boolean; d1: boolean };
   createdAt: string;
   updatedAt: string;
+  hasFile?: boolean;
+  demoMetadata?: Record<string, string>;
   renewedAt?: string;
   renewalTokenId?: string;
 }

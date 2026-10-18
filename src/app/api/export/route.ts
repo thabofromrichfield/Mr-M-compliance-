@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   archive.pipe(output);
   const finished = new Promise<void>((resolve, reject) => { output.on('end', resolve); output.on('error', reject); });
   for (const doc of docs) {
+    if (doc.hasFile === false) continue;
     try { archive.append(await readEncryptedFile(doc.id), { name: `documents/${doc.name}` }); }
     catch { archive.append(`Document file could not be decrypted: ${doc.id}`, { name: `errors/${doc.id}.txt` }); }
   }

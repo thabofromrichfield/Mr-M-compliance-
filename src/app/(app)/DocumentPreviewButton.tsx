@@ -39,6 +39,8 @@ export function DocumentPreviewButton({ document, className = 'preview-cta', lab
     } catch { setError('Download unavailable.'); }
   }
 
+  if (document.hasFile === false) return <span className="doc-meta">Metadata only · no PDF supplied</span>;
+
   return <>
     <button className={className} title={`Preview ${document.name}`} aria-label={`Preview ${document.name}`} onClick={openPreview}>
       {label}

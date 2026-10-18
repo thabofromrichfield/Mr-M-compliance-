@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { DEMO_MODE, DEMO_ENCRYPTION_KEY, isProduction } from './config';
 import { firebaseReady, storageBucket } from './firebase';
+import demoSeed from './demo-seed.json';
 
 const LOCAL_FILES = DEMO_MODE ? path.join(os.tmpdir(), 'clearledger-demo', 'files') : path.join(process.cwd(), '.data', 'files');
 const MAGIC = Buffer.from('CLD1');
@@ -50,6 +51,9 @@ export async function storeEncryptedFile(id: string, original: Buffer) {
   await fs.writeFile(path.join(LOCAL_FILES, `${id}.cld`), envelope, { mode: 0o600, flag: 'wx' });
 }
 export async function readEncryptedFile(id: string): Promise<Buffer> {
+  if (DEMO_MODE && Object.hasOwn(demoSeed.files, id)) {
+    return Buffer.from(demoSeed.files[id as keyof typeof demoSeed.files], 'base64');
+  }
   const envelope = firebaseReady()
     ? Buffer.from((await storageBucket().file(`documents/${id}.cld`).download())[0])
     : await fs.readFile(path.join(LOCAL_FILES, `${id}.cld`));

@@ -13,6 +13,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   const { id } = await ctx.params;
   const doc = await getRecord<ComplianceDocument>('documents', id);
   if (!doc) return jsonError('Document not found.', 404);
+  if (doc.hasFile === false) return jsonError('This demo record has no attached certificate. Only metadata was supplied.', 404);
   try {
     const bytes = await readEncryptedFile(id);
     const preview = req.nextUrl.searchParams.get('preview') === '1';
