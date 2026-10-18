@@ -1,3 +1,14 @@
+## Expiry and pricing scan
+
+Uploads scan readable PDF, DOCX, TXT and CSV text for expiry and ZAR pricing in one pass.
+The confirmation dialog asks you to review the date and cost; when pricing is missing
+or multiple different rand amounts are present, enter a cost manually or leave it unknown.
+Images/scanned PDFs without a text layer require manual entry (no external OCR service).
+Explicit `R` / `ZAR` amounts are supported, including thousands separators and decimal commas.
+Foreign-currency amounts are not automatically converted to rand. Zero means free;
+blank means unknown. Costs can be edited in the document list and appear in previews
+and exported metadata. Existing sample costs come from the supplied CSV.
+
 # Standalone demo (default)
 
 Run `npm install`, `npm run build`, then `npm start`, or deploy as a Next.js app.

@@ -4,6 +4,7 @@ import { currentUser } from '@/lib/auth';
 import { deleteRecord, getRecord, saveRecord } from '@/lib/data';
 import { removeEncryptedFile } from '@/lib/files';
 import { jsonError, sameOrigin, text } from '@/lib/http';
+import { isValidCost } from '@/lib/pricing';
 import { isValidExpiryDate } from '@/lib/renewal';
 import type { ComplianceDocument } from '@/lib/types';
 
@@ -25,6 +26,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const doc = await getRecord<ComplianceDocument>('documents', id);
   if (!doc) return jsonError('Document not found.', 404);
   const body = await req.json().catch(() => ({})) as Record<string, unknown>;
+  if (body.cost !== undefined) {
+    if (body.cost !== null && !isValidCost(body.cost)) return jsonError('Enter a non-negative ZAR cost with at most two decimal places, or leave it unknown.');
+    doc.cost = body.cost as number | null;
+  }
   if (body.markRenewed === true) {
     if (!isValidExpiryDate(body.expiryDate)) return jsonError('Enter the actual new expiry date shown on the renewed document.');
     doc.expiryDate = body.expiryDate;

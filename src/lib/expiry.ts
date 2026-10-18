@@ -1,5 +1,6 @@
 import 'server-only';
 import { strFromU8, unzipSync } from 'fflate';
+import { detectCost } from './pricing';
 
 const MONTHS: Record<string, number> = {
   jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
@@ -39,7 +40,7 @@ export function detectExpiryDate(text: string): string | null {
   return null;
 }
 
-export async function extractExpiryFromUpload(buffer: Buffer, mimeType: string): Promise<string | null> {
+export async function extractDocumentFields(buffer: Buffer, mimeType: string): Promise<{ expiryDate: string | null; cost: number | null }> {
   // Extracted text exists only transiently in memory; no text, OCR output, or unrelated fields are persisted.
   let text = '';
   if (mimeType === 'application/pdf') {
@@ -62,7 +63,11 @@ export async function extractExpiryFromUpload(buffer: Buffer, mimeType: string):
   } else if (mimeType === 'text/plain' || mimeType === 'text/csv') {
     text = buffer.toString('utf8');
   } else {
-    return null;
+    return { expiryDate: null, cost: null };
   }
-  return detectExpiryDate(text);
+  return { expiryDate: detectExpiryDate(text), cost: detectCost(text) };
+}
+
+export async function extractExpiryFromUpload(buffer: Buffer, mimeType: string): Promise<string | null> {
+  return (await extractDocumentFields(buffer, mimeType)).expiryDate;
 }

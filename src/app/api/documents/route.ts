@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { audit } from '@/lib/audit';
 import { currentUser } from '@/lib/auth';
 import { saveRecord, listRecords } from '@/lib/data';
-import { extractExpiryFromUpload } from '@/lib/expiry';
+import { extractDocumentFields } from '@/lib/expiry';
 import { readEncryptedFile, storeEncryptedFile } from '@/lib/files';
 import { jsonError, sameOrigin, text } from '@/lib/http';
 import type { ComplianceDocument } from '@/lib/types';
@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
   if (ext === 'webp' && (buffer.subarray(0, 4).toString() !== 'RIFF' || buffer.subarray(8, 12).toString() !== 'WEBP')) return jsonError('This WEBP image appears to be invalid.');
 
   let detectedExpiry: string | null = null;
-  try { detectedExpiry = await extractExpiryFromUpload(buffer, mimeType); }
+  let detectedCost: number | null = null;
+  try { const fields = await extractDocumentFields(buffer, mimeType); detectedExpiry = fields.expiryDate; detectedCost = fields.cost; }
   catch { detectedExpiry = null; }
   const name = text(file.name, 160).replace(/[\\/]/g, '_').replace(/^\.+/, '') || `document.${ext}`;
   const documents = await listRecords<ComplianceDocument>('documents');
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
   const doc: ComplianceDocument = {
     id, name, mimeType, size: file.size,
-    expiryDate: null, detectedExpiry, category: text(form.get('category'), 50) || 'Other',
+    expiryDate: null, detectedExpiry, cost: null, detectedCost, category: text(form.get('category'), 50) || 'Other',
     tags: text(form.get('tags'), 240).split(',').map(tag => text(tag, 32)).filter(Boolean).slice(0, 12),
     status: 'active', alertsSent: { d30: false, d7: false, d1: false }, createdAt: now, updatedAt: now,
   };

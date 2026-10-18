@@ -18,3 +18,7 @@ export function formatDate(value: string | null) {
   if (!value) return 'Not set';
   return new Intl.DateTimeFormat('en-ZA',{day:'numeric',month:'short',year:'numeric'}).format(new Date(`${value}T00:00:00`));
 }
+
+export function formatCost(value?: number | null) {
+  return value == null ? 'Not set' : new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(value);
+}

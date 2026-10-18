@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/clientFetch';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatCost } from '@/lib/format';
 import type { ComplianceDocument } from '@/lib/types';
 
 type Props = { document: ComplianceDocument; className?: string; label?: string };
@@ -48,7 +48,7 @@ export function DocumentPreviewButton({ document, className = 'preview-cta', lab
     {error && <span className="preview-inline-error" role="status">{error}</span>}
     {url && <div className="modal-backdrop preview-backdrop" onClick={closePreview}>
       <section className="modal certificate-preview-modal" role="dialog" aria-modal="true" aria-labelledby={`preview-${document.id}`} onClick={event => event.stopPropagation()}>
-        <header className="certificate-preview-header"><div><div className="eyebrow">CERTIFICATE PREVIEW</div><h2 id={`preview-${document.id}`}>{document.name}</h2><p>{document.category} · Expires {formatDate(document.expiryDate)}</p></div><div className="certificate-preview-actions"><button className="secondary-btn" onClick={downloadOriginal}>↓ Download</button><button className="icon-button" aria-label="Close preview" onClick={closePreview}>×</button></div></header>
+        <header className="certificate-preview-header"><div><div className="eyebrow">CERTIFICATE PREVIEW</div><h2 id={`preview-${document.id}`}>{document.name}</h2><p>{document.category} · Expires {formatDate(document.expiryDate)} · Cost {formatCost(document.cost)}</p></div><div className="certificate-preview-actions"><button className="secondary-btn" onClick={downloadOriginal}>↓ Download</button><button className="icon-button" aria-label="Close preview" onClick={closePreview}>×</button></div></header>
         {document.mimeType === 'application/pdf' || document.mimeType.startsWith('text/')
           ? <iframe className="certificate-preview-frame" src={url} title={`Preview of ${document.name}`} />
           : document.mimeType.startsWith('image/')

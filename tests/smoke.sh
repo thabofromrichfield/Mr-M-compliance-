@@ -21,10 +21,11 @@ AUTH=(-H "Authorization: Bearer $TOKEN" -H "X-ClearLedger-Session: $TOKEN")
 curl -fsS "${AUTH[@]}" "$BASE_URL/api/auth/me" > "$TMP/me.json"
 node -e "if(require('$TMP/me.json').user.email!=='$EMAIL')process.exit(1)"
 
-printf 'Operating permit. Expiry date: 25 November 2027. Internal ref: MUST NOT BE EXTRACTED.\n' > "$TMP/permit.txt"
+printf 'Operating permit. Expiry date: 25 November 2027. Renewal cost: R 1,850.50. Internal ref: MUST NOT BE EXTRACTED.\n' > "$TMP/permit.txt"
 curl -fsS "${AUTH[@]}" -F "file=@$TMP/permit.txt;type=text/plain" -F 'category=Licence' -F 'tags=annual,government' "$BASE_URL/api/documents" > "$TMP/upload.json"
 node - "$TMP/upload.json" <<'JS'
 const d=require(process.argv[2]).document;
+if(d.detectedCost!==1850.5||d.cost!==null) process.exit(1);
 if(d.detectedExpiry!=='2027-11-25'||d.expiryDate!==null||d.category!=='Licence'||!d.tags.includes('annual')) process.exit(1);
 if(Object.keys(d).some(k=>/text|content|extracted/i.test(k))) process.exit(1);
 JS
@@ -46,7 +47,18 @@ curl -fsS "${AUTH[@]}" -F "file=@$TMP/permit.txt;type=text/plain" -F 'category=L
 DUP_ID=$(node -e "process.stdout.write(require('$TMP/duplicate-confirmed.json').document.id)")
 node -e "if(require('$TMP/duplicate-confirmed.json').duplicateConfirmed!==true)process.exit(1)"
 curl -fsS "${AUTH[@]}" -X DELETE "$BASE_URL/api/documents/$DUP_ID" >/dev/null
-curl -fsS "${AUTH[@]}" -H 'Content-Type: application/json' -X PATCH -d '{"expiryDate":"2027-11-25"}' "$BASE_URL/api/documents/$ID" > /dev/null
+curl -fsS "${AUTH[@]}" -H 'Content-Type: application/json' -X PATCH -d '{"expiryDate":"2027-11-25","cost":1850.5}' "$BASE_URL/api/documents/$ID" > /dev/null
+# Pricing is validated, persisted and clearable without changing expiry.
+for INVALID in '-1' '1.001' '"free"' '1000000000'; do
+  status=$(curl -s "${AUTH[@]}" -H 'Content-Type: application/json' -X PATCH -d "{\"cost\":$INVALID}" -o /dev/null -w '%{http_code}' "$BASE_URL/api/documents/$ID")
+  [[ "$status" == 400 ]] || { echo "Invalid cost accepted: $INVALID"; exit 1; }
+done
+curl -fsS "${AUTH[@]}" "$BASE_URL/api/documents/$ID" > "$TMP/cost.json"
+node -e "if(require('$TMP/cost.json').document.cost!==1850.5)process.exit(1)"
+for COST in null 0 1850.5; do
+  curl -fsS "${AUTH[@]}" -H 'Content-Type: application/json' -X PATCH -d "{\"cost\":$COST}" "$BASE_URL/api/documents/$ID" > "$TMP/cost.json"
+  node -e "const d=require('$TMP/cost.json').document;if(d.cost!==$COST||d.expiryDate!=='2027-11-25')process.exit(1)"
+done
 curl -fsS "${AUTH[@]}" "$BASE_URL/api/documents/$ID/file" > "$TMP/download.txt"
 cmp "$TMP/permit.txt" "$TMP/download.txt"
 curl -fsS -D "$TMP/preview.headers" "${AUTH[@]}" "$BASE_URL/api/documents/$ID/file?preview=1" -o "$TMP/preview.txt"

@@ -35,7 +35,9 @@
         "status": "valid",
         "source_url": "https://www.sars.gov.za/wp-content/uploads/Docs/Customs-Excise/Letter-to-trade-RLA-release-10-September-2021.pdf",
         "renewal_cost_zar": "1850"
-      }
+      },
+      "cost": 1850.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-002",
@@ -72,7 +74,9 @@
         "status": "expiring_soon",
         "source_url": "",
         "renewal_cost_zar": "8500"
-      }
+      },
+      "cost": 8500.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-003",
@@ -109,7 +113,9 @@
         "status": "expiring_soon",
         "source_url": "https://www.iata.org/contentassets/51458b6df81644bfbfbf1c2216eb6da0/iata_cass-ff-en.pdf",
         "renewal_cost_zar": "9800"
-      }
+      },
+      "cost": 9800.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-004",
@@ -146,7 +152,9 @@
         "status": "expiring_soon",
         "source_url": "",
         "renewal_cost_zar": "3200"
-      }
+      },
+      "cost": 3200.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-005",
@@ -183,7 +191,9 @@
         "status": "expiring_soon",
         "source_url": "",
         "renewal_cost_zar": "2800"
-      }
+      },
+      "cost": 2800.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-006",
@@ -220,7 +230,9 @@
         "status": "valid",
         "source_url": "https://www.iata.org/en/training/courses/dgr-processing-recurrent-virtual/dgc023vcen02/en/",
         "renewal_cost_zar": "6500"
-      }
+      },
+      "cost": 6500.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-007",
@@ -257,7 +269,9 @@
         "status": "valid",
         "source_url": "https://getvuza.com/tenders/06CAA1E4",
         "renewal_cost_zar": "3800"
-      }
+      },
+      "cost": 3800.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-008",
@@ -294,7 +308,9 @@
         "status": "valid",
         "source_url": "https://ascfoodsafety.com/?p=42241",
         "renewal_cost_zar": "21000"
-      }
+      },
+      "cost": 21000.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-009",
@@ -331,7 +347,9 @@
         "status": "valid",
         "source_url": "",
         "renewal_cost_zar": "4500"
-      }
+      },
+      "cost": 4500.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-010",
@@ -368,7 +386,9 @@
         "status": "valid",
         "source_url": "",
         "renewal_cost_zar": "2500"
-      }
+      },
+      "cost": 2500.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-011",
@@ -405,7 +425,9 @@
         "status": "expired",
         "source_url": "https://app.taxtim.com/blog/faqs-tax-clearance-or-tax-compliance-status-tsc",
         "renewal_cost_zar": "480"
-      }
+      },
+      "cost": 480.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-012",
@@ -442,7 +464,9 @@
         "status": "expiring_soon",
         "source_url": "",
         "renewal_cost_zar": "6200"
-      }
+      },
+      "cost": 6200.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-013",
@@ -479,7 +503,9 @@
         "status": "expiring_soon",
         "source_url": "https://app.taxtim.com/blog/faqs-tax-clearance-or-tax-compliance-status-tsc",
         "renewal_cost_zar": "480"
-      }
+      },
+      "cost": 480.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-014",
@@ -516,7 +542,9 @@
         "status": "valid",
         "source_url": "https://mjkinc.co.za/compliance/bbbee",
         "renewal_cost_zar": "1800"
-      }
+      },
+      "cost": 1800.0,
+      "detectedCost": null
     },
     {
       "id": "DEMO-015",
@@ -554,7 +582,9 @@
         "status": "unknown",
         "source_url": "",
         "renewal_cost_zar": ""
-      }
+      },
+      "cost": null,
+      "detectedCost": null
     }
   ],
   "files": {

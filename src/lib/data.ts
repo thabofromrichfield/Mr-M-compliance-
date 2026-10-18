@@ -21,7 +21,16 @@ function localList<T>(collection: Collection): T[] {
   }
   try {
     const value: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return Array.isArray(value) ? value as T[] : [];
+    if (!Array.isArray(value)) return [];
+    if (DEMO_MODE && collection === 'documents') {
+      for (const record of value) {
+        if (record && record.cost === undefined && record.demoMetadata) {
+          record.cost = record.demoMetadata.renewal_cost_zar ? Number(record.demoMetadata.renewal_cost_zar) : null;
+          record.detectedCost = null;
+        }
+      }
+    }
+    return value as T[];
   } catch { return []; }
 }
 function localWrite<T extends { id: string }>(collection: Collection, records: T[]) {

@@ -7,6 +7,8 @@ export interface ComplianceDocument {
   size: number;
   expiryDate: string | null;
   detectedExpiry: string | null;
+  cost?: number | null;
+  detectedCost?: number | null;
   category: string;
   tags: string[];
   status: RenewalStatus;
