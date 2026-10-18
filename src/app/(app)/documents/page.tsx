@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { apiFetch, downloadApi } from '@/lib/clientFetch';
 import type { ComplianceDocument } from '@/lib/types';
 import { formatDate, urgency } from '@/lib/format';
+import { DocumentPreviewButton } from '../DocumentPreviewButton';
 
 type DuplicateMatch = {
   id: string;
   name: string;
   category: string;
   expiryDate: string | null;
-  matchType: 'exact-file' | 'same-name-and-expiry';
+  matchType: 'exact-file' | 'same-name-and-expiry' | 'same-name';
 };
 
 export default function DocumentsPage() {
@@ -25,8 +26,6 @@ export default function DocumentsPage() {
   const [expiry, setExpiry] = useState('');
   const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([]);
   const [duplicateDetectedExpiry, setDuplicateDetectedExpiry] = useState<string | null>(null);
-  const [previewDoc, setPreviewDoc] = useState<ComplianceDocument | null>(null);
-  const [previewUrl, setPreviewUrl] = useState('');
   const [renewalTarget, setRenewalTarget] = useState<ComplianceDocument | null>(null);
   const [renewalExpiry, setRenewalExpiry] = useState('');
   const [toast, setToast] = useState('');
@@ -40,7 +39,6 @@ export default function DocumentsPage() {
     setLoading(false);
   }
   useEffect(() => { load().catch(() => setLoading(false)); }, []);
-  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   const categories = useMemo(() => ['All categories', ...new Set(docs.map(d => d.category).filter(Boolean))], [docs]);
   const filtered = docs.filter(doc =>
@@ -131,20 +129,6 @@ export default function DocumentsPage() {
     await load();
     flash(`Renewal recorded. New expiry: ${formatDate(data.document.expiryDate)}.`);
   }
-  async function previewDocument(doc: ComplianceDocument) {
-    try {
-      const res = await apiFetch(`/api/documents/${doc.id}/file?preview=1`);
-      if (!res.ok) throw new Error('Could not open this certificate.');
-      const url = URL.createObjectURL(await res.blob());
-      setPreviewUrl(url);
-      setPreviewDoc(doc);
-    } catch { flash('Could not preview that file.'); }
-  }
-  function closePreview() {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl('');
-    setPreviewDoc(null);
-  }
   async function downloadDocument(doc: ComplianceDocument) {
     try {
       const res = await apiFetch(`/api/documents/${doc.id}/file`);
@@ -173,7 +157,7 @@ export default function DocumentsPage() {
 
     <section className="card section-card section-gap"><div className="section-header"><div><div className="section-title">All documents <span className="tag">{filtered.length}</span></div><div className="section-subtitle">Select <strong>Preview certificate</strong> directly beneath a document name to open it without downloading.</div></div><button className="secondary-btn" onClick={() => downloadApi('/api/export').catch(() => flash('Backup could not be downloaded.'))}>↓ Export ZIP</button></div>
       <div className="toolbar"><input className="search-field" aria-label="Search documents" placeholder="Search documents or tags…" value={query} onChange={e => setQuery(e.target.value)} /><select className="select-field" value={category} onChange={e => setCategory(e.target.value)}>{categories.map(c => <option key={c}>{c}</option>)}</select></div>
-      {loading ? <div className="empty-state">Loading documents…</div> : !filtered.length ? <div className="empty-state"><strong>{docs.length ? 'No matching documents' : 'No documents yet'}</strong><span>{docs.length ? 'Try another search or category.' : 'Upload your first document above to start tracking its expiry.'}</span></div> : <div className="document-table-wrap"><table className="document-table"><thead><tr><th>Document</th><th>Category & tags</th><th>Expiry date</th><th>Urgency</th><th>Actions</th></tr></thead><tbody>{filtered.map(doc => { const u = urgency(doc); return <tr key={doc.id}><td><div className="doc-name-wrap"><div className="file-icon">▤</div><div><div className="doc-name">{doc.name}</div><div className="doc-meta">Added {formatDate(doc.createdAt.slice(0, 10))} · {(doc.size / 1024).toFixed(0)} KB</div><button className="preview-action doc-inline-preview" title={`Preview ${doc.name}`} aria-label={`Preview ${doc.name}`} onClick={() => previewDocument(doc)}><span aria-hidden="true">◉</span>Preview certificate</button></div></div></td><td><div>{doc.category}</div><div className="tag-list" style={{ marginTop: 5 }}>{doc.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}</div></td><td>{formatDate(doc.expiryDate)}{doc.detectedExpiry && <div className="doc-meta">Detected · confirmed</div>}</td><td><span className={`urgency ${u.kind}`}><i className="urgency-dot" />{u.label}</span></td><td><div className="table-actions"><button className="icon-button" title="Download document" aria-label={`Download ${doc.name}`} onClick={() => downloadDocument(doc)}>↓</button><button className="icon-button" title="Edit expiry date" aria-label={`Edit expiry for ${doc.name}`} onClick={() => updateDate(doc)}>✎</button><button className="icon-button" title="Record renewal" aria-label={`Record renewal for ${doc.name}`} disabled={!doc.expiryDate} onClick={() => markRenewed(doc)}>✓</button><button className="icon-button danger" title="Remove document" aria-label={`Remove ${doc.name}`} onClick={() => removeDoc(doc)}>×</button></div></td></tr>; })}</tbody></table></div>}
+      {loading ? <div className="empty-state">Loading documents…</div> : !filtered.length ? <div className="empty-state"><strong>{docs.length ? 'No matching documents' : 'No documents yet'}</strong><span>{docs.length ? 'Try another search or category.' : 'Upload your first document above to start tracking its expiry.'}</span></div> : <div className="document-table-wrap"><table className="document-table"><thead><tr><th>Document</th><th>Category & tags</th><th>Expiry date</th><th>Urgency</th><th>Actions</th></tr></thead><tbody>{filtered.map(doc => { const u = urgency(doc); return <tr key={doc.id}><td><div className="doc-name-wrap"><div className="file-icon">▤</div><div><div className="doc-name">{doc.name}</div><div className="doc-meta">Added {formatDate(doc.createdAt.slice(0, 10))} · {(doc.size / 1024).toFixed(0)} KB</div><DocumentPreviewButton document={doc} className="preview-action doc-inline-preview" /></div></div></td><td><div>{doc.category}</div><div className="tag-list" style={{ marginTop: 5 }}>{doc.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}</div></td><td>{formatDate(doc.expiryDate)}{doc.detectedExpiry && <div className="doc-meta">Detected · confirmed</div>}</td><td><span className={`urgency ${u.kind}`}><i className="urgency-dot" />{u.label}</span></td><td><div className="table-actions"><button className="icon-button" title="Download document" aria-label={`Download ${doc.name}`} onClick={() => downloadDocument(doc)}>↓</button><button className="icon-button" title="Edit expiry date" aria-label={`Edit expiry for ${doc.name}`} onClick={() => updateDate(doc)}>✎</button><button className="icon-button" title="Record renewal" aria-label={`Record renewal for ${doc.name}`} disabled={!doc.expiryDate} onClick={() => markRenewed(doc)}>✓</button><button className="icon-button danger" title="Remove document" aria-label={`Remove ${doc.name}`} onClick={() => removeDoc(doc)}>×</button></div></td></tr>; })}</tbody></table></div>}
     </section>
 
     {duplicates.length > 0 && <div className="modal-backdrop"><div className="modal duplicate-modal" role="dialog" aria-modal="true" aria-labelledby="duplicate-title"><div className="eyebrow">POSSIBLE DUPLICATE</div><h2 id="duplicate-title">This certificate may already be in your library</h2><p>We found a matching file or a document with the same name and expiry date. Check the existing record before adding another copy.</p><div className="duplicate-match-list">{duplicates.map(match => <div className="duplicate-match" key={match.id}><span className="duplicate-match-icon">✓</span><div><strong>{match.name}</strong><small>{match.category}{match.expiryDate ? ` · expires ${formatDate(match.expiryDate)}` : ''}</small><span className="duplicate-match-kind">{match.matchType === 'exact-file' ? 'Exact file match' : match.matchType === 'same-name-and-expiry' ? 'Same name and expiry date' : 'Same document name'}</span></div></div>)}</div>{duplicateDetectedExpiry && <p className="duplicate-detected-date">New file expiry detected: <strong>{formatDate(duplicateDetectedExpiry)}</strong></p>}<p className="duplicate-question">Do you still want to add a second copy?</p><div className="modal-actions"><button className="secondary-btn" onClick={() => setDuplicates([])}>Cancel upload</button><button className="primary-btn" disabled={uploading} onClick={confirmDuplicate}>{uploading ? 'Adding…' : 'Yes, add another copy'}</button></div></div></div>}
@@ -182,7 +166,6 @@ export default function DocumentsPage() {
 
     {renewalTarget && <div className="modal-backdrop"><form className="modal renewal-modal" role="dialog" aria-modal="true" aria-labelledby="renewal-title" onSubmit={confirmRenewal}><div className="eyebrow">RECORD RENEWAL</div><h2 id="renewal-title">Enter the new expiry date</h2><p>Use the actual date printed on <strong>{renewalTarget.name}</strong>. Renewal periods vary, so ClearLedger will not add a fixed number of years.</p>{error && <div className="notice error">{error}</div>}<div className="form-item" style={{ marginTop: 16 }}><label htmlFor="renewal-expiry">New expiry date</label><input className="field" id="renewal-expiry" type="date" value={renewalExpiry} onChange={e => setRenewalExpiry(e.target.value)} required /></div><div className="modal-actions"><button type="button" className="secondary-btn" onClick={() => setRenewalTarget(null)}>Cancel</button><button className="primary-btn" disabled={!renewalExpiry}>Save renewal date</button></div></form></div>}
 
-    {previewDoc && previewUrl && <div className="modal-backdrop preview-backdrop" onClick={closePreview}><section className="modal certificate-preview-modal" role="dialog" aria-modal="true" aria-labelledby="preview-title" onClick={event => event.stopPropagation()}><header className="certificate-preview-header"><div><div className="eyebrow">CERTIFICATE PREVIEW</div><h2 id="preview-title">{previewDoc.name}</h2><p>{previewDoc.category} · Expires {formatDate(previewDoc.expiryDate)}</p></div><div className="certificate-preview-actions"><button className="secondary-btn" onClick={() => downloadDocument(previewDoc)}>↓ Download</button><button className="icon-button" aria-label="Close preview" onClick={closePreview}>×</button></div></header>{previewDoc.mimeType === 'application/pdf' || previewDoc.mimeType.startsWith('text/') ? <iframe className="certificate-preview-frame" src={previewUrl} title={`Preview of ${previewDoc.name}`} /> : previewDoc.mimeType.startsWith('image/') ? <div className="certificate-image-stage"><img src={previewUrl} alt={`Preview of ${previewDoc.name}`} /></div> : <div className="empty-state preview-unavailable"><strong>Preview is not available for this file type.</strong><span>Download the original document to view it.</span></div>}</section></div>}
     {toast && <div className="toast">{toast}</div>}
   </>;
 }

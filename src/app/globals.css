@@ -301,3 +301,5 @@ body { background-image: radial-gradient(ellipse at 88% 0, #eaf1ff 0, transparen
 .preview-action:hover { background: #e4ecff; border-color: #b8c9f5; }
 .preview-action span { font-size: 12px; }
 .doc-inline-preview { margin-top: 7px; }
+.dashboard-preview { margin-top: 7px; }
+.preview-inline-error { display: block; margin-top: 4px; color: #a83a34; font-size: 9px; }
