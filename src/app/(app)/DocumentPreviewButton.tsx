@@ -41,7 +41,7 @@ export function DocumentPreviewButton({ document, className = 'preview-action', 
 
   return <>
     <button className={className} title={`Preview ${document.name}`} aria-label={`Preview ${document.name}`} onClick={openPreview}>
-      <span aria-hidden="true">◉</span>{label}
+      <svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2.2 10s2.8-5 7.8-5 7.8 5 7.8 5-2.8 5-7.8 5-7.8-5-7.8-5Z"/><circle cx="10" cy="10" r="2.1"/></svg>{label}
     </button>
     {error && <span className="preview-inline-error" role="status">{error}</span>}
     {url && <div className="modal-backdrop preview-backdrop" onClick={closePreview}>

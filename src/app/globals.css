@@ -293,13 +293,14 @@ body { background-image: radial-gradient(ellipse at 88% 0, #eaf1ff 0, transparen
   .duplicate-modal, .renewal-modal { padding: 21px; }
 }
 .preview-action {
-  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  min-height: 30px; padding: 0 9px; color: #315fdb; background: #eff4ff;
-  border: 1px solid #dce6ff; border-radius: 7px; font-size: 10px; font-weight: 700;
-  white-space: nowrap; transition: .18s ease;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 24px; padding: 2px 0; color: #526a97; background: transparent;
+  border: 0; border-radius: 4px; font-size: 10px; font-weight: 650;
+  white-space: nowrap; cursor: pointer; transition: color .16s ease;
 }
-.preview-action:hover { background: #e4ecff; border-color: #b8c9f5; }
-.preview-action span { font-size: 12px; }
-.doc-inline-preview { margin-top: 7px; }
-.dashboard-preview { margin-top: 7px; }
+.preview-action:hover { color: #244da9; text-decoration: underline; text-underline-offset: 3px; }
+.preview-action:focus-visible { outline: 2px solid #7896e7; outline-offset: 3px; }
+.preview-action svg { flex: 0 0 auto; opacity: .85; }
+.doc-inline-preview { margin-top: 6px; }
+.dashboard-preview { margin-top: 6px; }
 .preview-inline-error { display: block; margin-top: 4px; color: #a83a34; font-size: 9px; }
